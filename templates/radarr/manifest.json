@@ -1,0 +1,6 @@
+{
+    "name": "Radarr",
+    "description": "Movie collection manager for Usenet and BitTorrent users.",
+    "type": "compose",
+    "tags": ["media", "downloads"]
+}

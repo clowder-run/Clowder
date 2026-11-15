@@ -1,0 +1,6 @@
+{
+    "name": "Silo",
+    "description": "Self-hosted media server for streaming your movies and series to any screen.",
+    "type": "compose",
+    "tags": ["media"]
+}

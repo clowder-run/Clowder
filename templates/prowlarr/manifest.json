@@ -1,0 +1,6 @@
+{
+    "name": "Prowlarr",
+    "description": "Indexer manager and proxy that integrates with your various PVR apps.",
+    "type": "compose",
+    "tags": ["media", "downloads"]
+}

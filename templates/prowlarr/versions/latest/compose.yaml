@@ -1,0 +1,22 @@
+services:
+    prowlarr:
+        image: lscr.io/linuxserver/prowlarr:latest
+        pull_policy: always
+        restart: unless-stopped
+        x-ports:
+            - ${PROWLARR_HOST}:9696/https
+        environment:
+            PUID: ${MEDIA_UID}
+            PGID: ${MEDIA_GID}
+            TZ: ${TZ}
+        volumes:
+            - prowlarr_config:/config
+        healthcheck:
+            test: ["CMD", "curl", "-fsS", "http://localhost:9696/ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+
+volumes:
+    prowlarr_config:

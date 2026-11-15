@@ -1,0 +1,16 @@
+{
+    "name": "Calagopus",
+    "description": "Open-source game server management panel built in Rust.",
+    "type": "compose",
+    "tags": ["gaming"],
+    "resources": {
+        "db": {
+            "name": "Database",
+            "engine": "postgresql"
+        },
+        "cache": {
+            "name": "Cache",
+            "engine": "redis"
+        }
+    }
+}

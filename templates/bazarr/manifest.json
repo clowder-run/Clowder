@@ -1,0 +1,6 @@
+{
+    "name": "Bazarr",
+    "description": "Companion application to Sonarr and Radarr that manages and downloads subtitles.",
+    "type": "compose",
+    "tags": ["media", "downloads"]
+}

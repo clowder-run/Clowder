@@ -1,0 +1,6 @@
+{
+    "name": "Sonarr",
+    "description": "Smart PVR for newsgroup and BitTorrent users that monitors and manages your TV series.",
+    "type": "compose",
+    "tags": ["media", "downloads"]
+}

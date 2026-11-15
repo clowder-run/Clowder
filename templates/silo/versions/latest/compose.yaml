@@ -1,0 +1,38 @@
+services:
+    silo:
+        # Prerelease builds update the `latest` tag in place; `pull_policy: always` fetches new builds on redeploy.
+        image: ghcr.io/silo-server/silo-server:latest
+        pull_policy: always
+        restart: unless-stopped
+        stop_grace_period: 2m
+        cap_add:
+            - NET_ADMIN
+        x-ports:
+            - ${SILO_HOST}:8080/https
+        environment:
+            PORT: "8080"
+            JF_PORT: "8096"
+            ABS_PORT: "13378"
+            PUID: ${MEDIA_UID}
+            PGID: ${MEDIA_GID}
+            TZ: ${TZ}
+            SECRET_KEY: ${SECRET_KEY}
+            ENABLE_REDIS: ${ENABLE_REDIS}
+            ENABLE_MEILISEARCH: ${ENABLE_MEILISEARCH}
+        volumes:
+            - silo_config:/config
+            - ${MEDIA_PATH}:/mnt/media:ro
+            - silo_transcode:/tmp/silo-transcode
+            - silo_downloads:/tmp/silo-download-artifacts
+        healthcheck:
+            # Startup runs database migrations before the HTTP listener opens.
+            test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/v1/health"]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 5m
+
+volumes:
+    silo_config:
+    silo_transcode:
+    silo_downloads:

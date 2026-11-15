@@ -1,0 +1,33 @@
+services:
+    calagopus:
+        image: ghcr.io/calagopus/panel:nightly
+        pull_policy: always
+        restart: unless-stopped
+        x-ports:
+            - ${CALAGOPUS_HOST}:8000/https
+        environment:
+            TZ: ${TZ}
+            PORT: "8000"
+            DATABASE_URL: ${DATABASE_URL}
+            DATABASE_MIGRATE: "true"
+            REDIS_URL: ${REDIS_URL}
+            APP_DEBUG: "false"
+            APP_LOG_DIRECTORY: /var/log/calagopus
+            APP_PRIMARY: "true"
+            APP_ENABLE_WINGS_PROXY: "true"
+            APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY}
+            APP_USE_DECRYPTION_CACHE: "true"
+            APP_USE_INTERNAL_CACHE: "true"
+        volumes:
+            - calagopus_data:/var/lib/calagopus
+            - calagopus_logs:/var/log/calagopus
+        healthcheck:
+            test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8000/api/settings"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+
+volumes:
+    calagopus_data:
+    calagopus_logs:

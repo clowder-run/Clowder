@@ -1,0 +1,6 @@
+{
+    "name": "Seerr",
+    "description": "Request management and media discovery tool for Jellyfin, Plex, and Emby.",
+    "type": "compose",
+    "tags": ["media"]
+}
