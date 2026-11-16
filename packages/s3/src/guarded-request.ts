@@ -4,6 +4,9 @@ import { isIP } from "node:net";
 // Imported, not defined here, so tests can swap the agent for one that trusts their own CA.
 import { guardedHttpsAgent, isAllowedS3Address } from "./client";
 
+// Registry manifests, tokens and S3 admin replies are a few KB; an image index stays well under this.
+const MAX_RESPONSE_BYTES = 1024 * 1024;
+
 export type GuardedResponse = { status: number; headers: IncomingHttpHeaders; text: string };
 
 /**
@@ -27,7 +30,17 @@ export function guardedHttpsRequest(
             { method, headers, agent: guardedHttpsAgent(), timeout: 10_000 },
             (response) => {
                 const chunks: Buffer[] = [];
-                response.on("data", (chunk: Buffer) => chunks.push(chunk));
+                let size = 0;
+
+                // The host is user-chosen, so an endless or huge body must not fill memory.
+                response.on("data", (chunk: Buffer) => {
+                    size += chunk.length;
+
+                    if (size > MAX_RESPONSE_BYTES)
+                        return request.destroy(new Error(`${url.host} sent too large a response.`));
+
+                    chunks.push(chunk);
+                });
                 response.on("error", reject);
                 response.on("end", () =>
                     resolve({

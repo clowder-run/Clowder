@@ -23,8 +23,16 @@
         resourceId: resource.id,
     });
 
+    // Polled while a job runs, so the SSH command shows up once it starts.
     const sandboxQuery = createQuery(() =>
-        orpc.sandboxes.get.queryOptions({ input }),
+        orpc.sandboxes.get.queryOptions({
+            input,
+            refetchInterval: (query) =>
+                query.state.data?.status === "provisioning" ||
+                query.state.data?.status === "destroying"
+                    ? 3000
+                    : false,
+        }),
     );
 
     const sandbox = $derived(sandboxQuery.data);

@@ -40,7 +40,7 @@ describe("sandbox deployments", () => {
     let deployed: string[] = [];
     let removed: string[] = [];
     let removeStatus = 200;
-    let volumesStatus = 200;
+    let lookupStatus = 200;
     // Volume names the fake cluster has no volume by.
     let missingVolumes = new Set<string>();
     let deployError: string | null = null;
@@ -65,11 +65,24 @@ describe("sandbox deployments", () => {
                 }),
             );
 
+        // The deployed sandbox's one container, on hazel.
+        if (request.method === "GET" && request.url?.startsWith("/api/v1/services/"))
+            return json(
+                lookupStatus,
+                JSON.stringify({
+                    id: "s1",
+                    name: decodeURIComponent(request.url.slice("/api/v1/services/".length)),
+                    mode: "replicated",
+                    containers: [{ machineId: "m1", machineName: "hazel", container: {} }],
+                    hookContainers: [],
+                }),
+            );
+
         if (request.method === "GET" && request.url?.startsWith("/api/v1/volumes")) {
             const name = new URL(request.url, "http://sidecar").searchParams.get("names") ?? "";
 
             return json(
-                volumesStatus,
+                200,
                 JSON.stringify({
                     items: missingVolumes.has(name)
                         ? []
@@ -199,7 +212,7 @@ describe("sandbox deployments", () => {
         deployed = [];
         removed = [];
         removeStatus = 200;
-        volumesStatus = 200;
+        lookupStatus = 200;
         missingVolumes = new Set();
         deployError = null;
         duringDeploy = async () => {};
@@ -246,7 +259,7 @@ describe("sandbox deployments", () => {
     it("still runs when looking up its machine fails after the deploy", async () => {
         const { id, deploymentId } = await insertSandbox("ProvisionSandbox", null);
 
-        volumesStatus = 500;
+        lookupStatus = 500;
         await provisionSandbox(db, deploymentId, signal);
 
         const { sandbox, deployment, logs } = await load(id, deploymentId);
@@ -332,6 +345,23 @@ describe("sandbox deployments", () => {
         expect(deployment).toMatchObject({ status: "failed" });
         expect(deployment.error).toContain("no /dev/kvm");
         expect(logs.at(-1)).toMatchObject({ metadata: { level: "error" } });
+    });
+
+    it("leaves a destroy requested mid-deploy in place when the deploy fails", async () => {
+        const { id, deploymentId } = await insertSandbox("ProvisionSandbox", null);
+
+        deployError = "machine hazel has no /dev/kvm";
+        duringDeploy = async () => {
+            await db
+                .update(sandboxes)
+                .set({ status: "destroying" })
+                .where(eq(sandboxes.resourceId, id));
+        };
+
+        await expect(provisionSandbox(db, deploymentId, signal)).rejects.toThrow("no /dev/kvm");
+
+        // Still `destroying`, so the destroy job can delete the resource once it removes the VM.
+        expect((await load(id, deploymentId)).sandbox.status).toBe("destroying");
     });
 
     function owner() {

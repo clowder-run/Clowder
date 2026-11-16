@@ -60,6 +60,7 @@ describe("sandboxes API", () => {
     let owner: Context;
     let stranger: Context;
     let imageId: string;
+    let organizationId: string;
 
     function context(userId: string, organizationId: string) {
         // SAFETY: authorization reads only identity and active organization.
@@ -86,7 +87,7 @@ describe("sandboxes API", () => {
         db = createDb({ DATABASE_URL: url.toString() });
         await migrate(db, { migrationsFolder: resolve("packages/db/src/migrations") });
 
-        const organizationId = await insertUserWithOrganization(db, "owner", "Owner", "o@x.test");
+        organizationId = await insertUserWithOrganization(db, "owner", "Owner", "o@x.test");
 
         const otherOrganization = await insertUserWithOrganization(
             db,
@@ -208,8 +209,13 @@ describe("sandboxes API", () => {
     it("keeps a destroyed sandbox's volume and port free for a new one", async () => {
         const { id, sshPort } = await create("old-badger");
 
+        // Staged on the canvas, then applied: an accepted destroy is no longer a change to apply.
+        await db.update(resources).set({ pendingDelete: true }).where(eq(resources.id, id));
         await call(sandboxesRouter.destroy, sandboxInput(id), { context: owner });
         expect((await attempts(id))[0]).toMatchObject({ name: "DestroySandbox" });
+        expect(
+            (await db.select().from(resources).where(eq(resources.id, id)))[0]?.pendingDelete,
+        ).toBe(false);
         await expect(
             call(sandboxesRouter.destroy, sandboxInput(id), { context: owner }),
         ).rejects.toThrow("This sandbox is destroying.");
@@ -223,7 +229,8 @@ describe("sandboxes API", () => {
         // The kept volume holds on to its name until it's reused.
         await expect(create("old-badger")).rejects.toThrow("Pick it as the volume");
 
-        const reused = await create("new-badger", { volumeId: volume!.id });
+        // Picking it, as the error says, takes the name back.
+        const reused = await create("old-badger", { volumeId: volume!.id });
 
         const [card] = await db
             .select({ id: resources.id })
@@ -266,6 +273,35 @@ describe("sandboxes API", () => {
         ).rejects.toThrow(/Destroy the sandbox ".+" first\./u);
         await expect(
             call(clusterRouter.deleteCluster, { clusterId }, { context: owner }),
+        ).rejects.toThrow("Destroy the sandboxes on this cluster first.");
+    });
+
+    it("refuses to delete the cluster of a project whose sandbox runs elsewhere", async () => {
+        const homeId = randomUUID();
+        const homeProjectId = randomUUID();
+
+        await db.insert(clusters).values({
+            id: homeId,
+            name: "Home",
+            sidecarUrl: "http://home.test",
+            sidecarToken: "secret",
+            organizationId,
+        });
+        await db.insert(projects).values({ id: homeProjectId, name: "Home", clusterId: homeId });
+        await call(
+            sandboxesRouter.create,
+            {
+                projectId: homeProjectId,
+                slug: "far-wren",
+                clusterId,
+                imageId,
+                authorizedKeys: publicKey,
+            },
+            { context: owner },
+        );
+
+        await expect(
+            call(clusterRouter.deleteCluster, { clusterId: homeId }, { context: owner }),
         ).rejects.toThrow("Destroy the sandboxes on this cluster first.");
     });
 });

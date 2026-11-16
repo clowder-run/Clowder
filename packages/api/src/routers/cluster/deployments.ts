@@ -199,7 +199,7 @@ export const deploymentsRouter = {
 
             // Settled as failed, so it can be retried or destroyed rather than stay in progress.
             if ((job === "ProvisionSandbox" || job === "DestroySandbox") && deployment.resourceId)
-                await markSandboxFailed(db, deployment.resourceId);
+                await markSandboxFailed(db, deployment.resourceId, job);
 
             if (job === "InitializeCluster")
                 await db

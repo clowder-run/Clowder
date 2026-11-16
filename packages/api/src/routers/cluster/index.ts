@@ -9,7 +9,7 @@ import {
     sandboxes,
 } from "@clowder/db/schema/index";
 import { ucClient, unwrap } from "@clowder/uncloud";
-import { and, asc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import * as v from "valibot";
 import { queueClusterHealthCheck } from "@clowder/workflows/runtime";
@@ -335,10 +335,15 @@ export const clusterRouter = {
                 const [sandbox] = await tx
                     .select({ resourceId: sandboxes.resourceId })
                     .from(sandboxes)
-                    .where(eq(sandboxes.clusterId, cluster.id))
+                    .innerJoin(resources, eq(resources.id, sandboxes.resourceId))
+                    .innerJoin(projects, eq(projects.id, resources.projectId))
+                    .where(
+                        or(eq(sandboxes.clusterId, cluster.id), eq(projects.clusterId, cluster.id)),
+                    )
                     .limit(1);
 
-                // Cascading would drop the rows and leave their VMs running.
+                // Cascading would drop the rows and leave their VMs running. A sandbox can run
+                // on another cluster than its project's, and deleting either would orphan it.
                 if (sandbox)
                     throw new ORPCError("CONFLICT", {
                         message: "Destroy the sandboxes on this cluster first.",

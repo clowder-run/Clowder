@@ -348,7 +348,7 @@ async function recordFailureAsync(db: Database, failure: Worker.JobFailure) {
             (failure.name === "ProvisionSandbox" || failure.name === "DestroySandbox") &&
             deployment.resourceId
         )
-            await markSandboxFailed(db, deployment.resourceId);
+            await markSandboxFailed(db, deployment.resourceId, failure.name);
 
         return;
     }

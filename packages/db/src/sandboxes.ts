@@ -71,9 +71,19 @@ export function markSandboxRunning(db: Database, resourceId: string, sshHost: st
     return moveSandbox(db, resourceId, ["provisioning"], { status: "running", sshHost });
 }
 
-/** Its deployment carries why; a retry repeats whichever attempt failed. */
-export function markSandboxFailed(db: Database, resourceId: string) {
-    return moveSandbox(db, resourceId, ["provisioning", "destroying"], { status: "failed" });
+/**
+ * Its deployment carries why; a retry repeats whichever attempt failed. Only the state `name`
+ * was started for moves, so a failed deploy never takes over a destroy requested meanwhile.
+ */
+export function markSandboxFailed(db: Database, resourceId: string, name: SandboxDeploymentName) {
+    return moveSandbox(
+        db,
+        resourceId,
+        [name === "ProvisionSandbox" ? "provisioning" : "destroying"],
+        {
+            status: "failed",
+        },
+    );
 }
 
 /**

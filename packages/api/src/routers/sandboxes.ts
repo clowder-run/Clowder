@@ -146,12 +146,14 @@ async function getFreeVolume(db: Database, clusterId: string, volumeId: string) 
     return { ...volume, card: volume.card, cardProjectId: volume.cardProjectId };
 }
 
-// A destroyed sandbox frees its name, but its volume stays under that name until it's reused.
+// A destroyed sandbox frees its name, but its volume stays under that name until it's reused,
+// which is when it's `reusedVolumeId`.
 async function assertSlugFree(
     db: Database,
     organizationId: string,
     clusterId: string,
     value: string,
+    reusedVolumeId: string | undefined,
 ) {
     const [taken] = await db
         .select({ resourceId: sandboxes.resourceId })
@@ -172,7 +174,7 @@ async function assertSlugFree(
         )
         .limit(1);
 
-    if (kept)
+    if (kept && kept.id !== reusedVolumeId)
         throw new ORPCError("CONFLICT", {
             message:
                 "An earlier sandbox's volume has that name. Pick it as the volume, or another name.",
@@ -214,9 +216,16 @@ async function request(
             .where(and(eq(sandboxes.resourceId, resourceId), inArray(sandboxes.status, from)))
             .returning({ clusterId: sandboxes.clusterId });
 
-        return moved?.clusterId
-            ? queueSandboxDeployment(tx, resourceId, moved.clusterId, name)
-            : null;
+        if (!moved?.clusterId) return null;
+
+        // The destroy is underway, so the canvas no longer counts it as a change to apply.
+        if (name === "DestroySandbox")
+            await tx
+                .update(resources)
+                .set({ pendingDelete: false })
+                .where(eq(resources.id, resourceId));
+
+        return queueSandboxDeployment(tx, resourceId, moved.clusterId, name);
     });
 
     if (!deploymentId)
@@ -355,8 +364,8 @@ export const sandboxesRouter = {
                 });
 
             const check = () =>
-                assertSlugFree(db, organizationId, input.clusterId, input.slug).then(() =>
-                    volume ? getFreeVolume(db, input.clusterId, volume.id) : null,
+                assertSlugFree(db, organizationId, input.clusterId, input.slug, volume?.id).then(
+                    () => (volume ? getFreeVolume(db, input.clusterId, volume.id) : null),
                 );
 
             await check();

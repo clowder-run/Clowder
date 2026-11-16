@@ -124,7 +124,7 @@ async function runAttempt(
 
         await log(message, "error", "error");
         await setDeploymentStatus(db, deploymentId, "failed", message);
-        await markSandboxFailed(db, resourceId);
+        await markSandboxFailed(db, resourceId, name);
 
         throw new Error(message);
     }
@@ -160,11 +160,12 @@ export function provisionSandbox(db: Database, deploymentId: string, signal: Abo
         );
 
         // The VM already runs, so a failed lookup only costs the SSH address, not the sandbox.
+        // Its container's machine is where the volume is: a reused one may exist on several.
         const host = await unwrap(
-            uc.GET("/api/v1/volumes", { params: { query: { names: volume.name } }, signal }),
+            uc.GET("/api/v1/services/{id}", { params: { path: { id: service } }, signal }),
         )
-            .then(async (volumes) => {
-                const machine = volumes.items[0]?.machineName;
+            .then(async (deployed) => {
+                const machine = deployed.containers[0]?.machineName;
 
                 if (!machine) return null;
 
