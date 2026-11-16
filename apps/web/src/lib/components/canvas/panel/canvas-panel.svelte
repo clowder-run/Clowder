@@ -26,6 +26,7 @@
     import DatabaseStats from "./database/database-stats.svelte";
     import CanvasDeployments from "./canvas-deployments.svelte";
     import CanvasSettings from "./canvas-settings.svelte";
+    import CanvasTerminal from "./canvas-terminal.svelte";
     import CanvasBucketVariables from "./canvas-bucket-variables.svelte";
     import CanvasVariables from "./canvas-variables.svelte";
 
@@ -66,6 +67,7 @@
         "compose",
         "metrics",
         "logs",
+        "terminal",
         "settings",
     ] as const;
 
@@ -78,6 +80,7 @@
         compose: "Compose",
         metrics: "Metrics",
         logs: "Logs",
+        terminal: "Terminal",
         settings: "Settings",
     };
 
@@ -107,8 +110,13 @@
             ? (["files", "variables", "settings"] as const)
             : resource.type === "sandbox"
               ? showCompose.current
-                  ? (["deployments", "compose", "settings"] as const)
-                  : (["deployments", "settings"] as const)
+                  ? ([
+                        "deployments",
+                        "terminal",
+                        "compose",
+                        "settings",
+                    ] as const)
+                  : (["deployments", "terminal", "settings"] as const)
               : tabs.filter(
                     (name) =>
                         name !== "files" &&
@@ -150,6 +158,7 @@
 
     const fullBleed = $derived(
         active === "logs" ||
+            active === "terminal" ||
             active === "deployments" ||
             active === "files" ||
             active === "settings" ||
@@ -271,6 +280,7 @@
             class={[
                 "min-h-0 flex-1 bg-card p-0",
                 active === "logs" ||
+                active === "terminal" ||
                 active === "deployments" ||
                 active === "files" ||
                 active === "tables" ||
@@ -327,6 +337,15 @@
                     serviceName={selectedService}
                     focused={!stacked}
                 />
+            {:else if active === "terminal"}
+                <!-- A new service gets its own shell. -->
+                {#key selectedService}
+                    <CanvasTerminal
+                        projectId={resource.projectId}
+                        resourceId={resource.id}
+                        service={selectedService}
+                    />
+                {/key}
             {:else}
                 <CanvasSettings {resource} {services} />
             {/if}

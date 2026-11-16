@@ -126,6 +126,7 @@ type Backend interface {
 	StopContainer(context.Context, string, string, container.StopOptions) error
 	RemoveContainer(context.Context, string, string, container.RemoveOptions) error
 	ExecContainer(context.Context, string, string, api.ExecOptions) (int, error)
+	Terminal(context.Context, string, string, []string, <-chan TerminalInput, io.Writer) error
 	ExecMachine(context.Context, string, api.ExecOptions) (int, error)
 
 	ListVolumes(context.Context, *api.VolumeFilter) ([]api.MachineVolume, error)
@@ -666,6 +667,18 @@ func (s *Server) registerOperations(humaAPI huma.API) {
 		OperationID: "execContainer", Method: http.MethodPost, Path: "/api/v1/services/{id}/containers/{container}/exec",
 		Summary: "Execute a command in a service container", Tags: []string{"services"},
 	}, s.execContainer)
+	register(humaAPI, huma.Operation{
+		OperationID: "terminal", Method: http.MethodGet, Path: "/api/v1/services/{id}/terminal",
+		Summary: "Open a shell in a service container", Tags: []string{"services"}, DefaultStatus: http.StatusSwitchingProtocols,
+		Description: "With `Connection: Upgrade` and `Upgrade: terminal`, switches to a shell (bash, else sh) in a TTY. " +
+			"The client then sends a stream of JSON values, `{\"stdin\": \"...\"}` and `{\"resize\": [cols, rows]}`, " +
+			"and reads the raw terminal output until the shell exits and the connection closes. " +
+			"Errors after the switch are written to the terminal. Without the headers it answers 426.",
+		Errors: []int{http.StatusUpgradeRequired},
+		Responses: map[string]*huma.Response{
+			"101": {Description: "The connection now carries the terminal"},
+		},
+	}, s.terminal)
 	register(humaAPI, huma.Operation{
 		OperationID: "serviceHTTP", Method: http.MethodPost, Path: "/api/v1/services/{name}/http",
 		Summary: "Send an HTTP request to a service over the cluster network", Tags: []string{"services"},

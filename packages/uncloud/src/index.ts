@@ -426,6 +426,40 @@ export async function serveUncloudSocket(
     };
 }
 
+/**
+ * Opens a shell in a running container of `service`. Write `{"stdin": ...}` and
+ * `{"resize": [cols, rows]}` JSON values to the socket; it reads back raw terminal output and
+ * closes when the shell exits.
+ */
+export async function openTerminal(
+    sidecarUrl: string,
+    service: string,
+    options: Pick<UcClientOptions, "certificate"> & { token: string },
+) {
+    const url = `${normalizeSidecarUrl(sidecarUrl)}/api/v1/services/${encodeURIComponent(service)}/terminal`;
+
+    // An upgrade needs HTTP/1.1, as in serveUncloudSocket.
+    const dispatcher = new Agent({
+        allowH2: false,
+        ...(options.certificate && { connect: { ca: options.certificate } }),
+    });
+
+    try {
+        const { socket } = await upgrade(url, {
+            dispatcher,
+            protocol: "terminal",
+            headers: { authorization: `Bearer ${options.token}` },
+        });
+
+        socket.once("close", () => void dispatcher.close());
+
+        return socket;
+    } catch (error) {
+        await dispatcher.close();
+        throw error;
+    }
+}
+
 export type UcClient = ReturnType<typeof ucClient>;
 
 /**

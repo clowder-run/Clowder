@@ -20,9 +20,20 @@ const (
 )
 
 // switchingProtocols is written by hand: with HijackSetNoResponse fasthttp sends no response.
-const switchingProtocols = "HTTP/1.1 101 Switching Protocols\r\n" +
-	"Connection: Upgrade\r\n" +
-	"Upgrade: " + uncloudProtocol + "\r\n\r\n"
+func switchingProtocols(protocol string) string {
+	return "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: " + protocol + "\r\n\r\n"
+}
+
+// requireUpgrade answers 426 unless the request asks to switch to protocol.
+func requireUpgrade(connection, upgrade, protocol string) error {
+	if listsToken(connection, "upgrade") && strings.EqualFold(strings.TrimSpace(upgrade), protocol) {
+		return nil
+	}
+	return huma.ErrorWithHeaders(
+		huma.NewError(http.StatusUpgradeRequired, "send Connection: Upgrade and Upgrade: "+protocol),
+		http.Header{"Upgrade": {protocol}},
+	)
+}
 
 type connectUncloudInput struct {
 	Connection string `header:"Connection" doc:"Must list Upgrade."`
@@ -38,11 +49,8 @@ func (s *Server) connectUncloud(ctx context.Context, input *connectUncloudInput)
 	if s.removing.Load() {
 		return nil, errRemovingMachine()
 	}
-	if !listsToken(input.Connection, "upgrade") || !strings.EqualFold(strings.TrimSpace(input.Upgrade), uncloudProtocol) {
-		return nil, huma.ErrorWithHeaders(
-			huma.NewError(http.StatusUpgradeRequired, "send Connection: Upgrade and Upgrade: "+uncloudProtocol),
-			http.Header{"Upgrade": {uncloudProtocol}},
-		)
+	if err := requireUpgrade(input.Connection, input.Upgrade, uncloudProtocol); err != nil {
+		return nil, err
 	}
 
 	select {
@@ -64,7 +72,7 @@ func (s *Server) connectUncloud(ctx context.Context, input *connectUncloudInput)
 			defer func() { <-s.uncloudConnections }()
 			defer func() { _ = upstream.Close() }()
 
-			if _, err := io.WriteString(conn, switchingProtocols); err != nil {
+			if _, err := io.WriteString(conn, switchingProtocols(uncloudProtocol)); err != nil {
 				return
 			}
 			relay(conn, upstream)

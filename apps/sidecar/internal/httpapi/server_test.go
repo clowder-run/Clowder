@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -269,6 +270,24 @@ func (f *fakeBackend) ExecContainer(_ context.Context, serviceID, containerID st
 	_, _ = io.Copy(opts.Stdout, bytes.NewBufferString("out:"+string(input)))
 	_, _ = io.Copy(opts.Stderr, bytes.NewBufferString("warning"))
 	return 0, nil
+}
+
+// Terminal names its target, then reports sizes and echoes keystrokes until it reads "exit".
+func (f *fakeBackend) Terminal(_ context.Context, serviceID, containerID string, _ []string, input <-chan TerminalInput, output io.Writer) error {
+	if f.execErr != nil {
+		return f.execErr
+	}
+	_, _ = fmt.Fprintf(output, "shell in %s/%s\n", serviceID, containerID)
+	for message := range input {
+		if message.Resize != nil {
+			_, _ = fmt.Fprintf(output, "size %dx%d\n", message.Resize[0], message.Resize[1])
+		}
+		if message.Stdin == "exit" {
+			return nil
+		}
+		_, _ = io.WriteString(output, message.Stdin)
+	}
+	return nil
 }
 
 func (f *fakeBackend) ExecMachine(ctx context.Context, machineID string, opts api.ExecOptions) (int, error) {

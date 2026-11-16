@@ -4114,6 +4114,119 @@
                 "tags": ["services"]
             }
         },
+        "/api/v1/services/{id}/terminal": {
+            "get": {
+                "description": "With `Connection: Upgrade` and `Upgrade: terminal`, switches to a shell (bash, else sh) in a TTY. The client then sends a stream of JSON values, `{\"stdin\": \"...\"}` and `{\"resize\": [cols, rows]}`, and reads the raw terminal output until the shell exits and the connection closes. Errors after the switch are written to the terminal. Without the headers it answers 426.",
+                "operationId": "terminal",
+                "parameters": [
+                    {
+                        "description": "Service name or ID.",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "description": "Service name or ID.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Container name or ID. Defaults to a running container of the service.",
+                        "explode": false,
+                        "in": "query",
+                        "name": "container",
+                        "schema": {
+                            "description": "Container name or ID. Defaults to a running container of the service.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Must list Upgrade.",
+                        "in": "header",
+                        "name": "Connection",
+                        "schema": {
+                            "description": "Must list Upgrade.",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Must be terminal.",
+                        "in": "header",
+                        "name": "Upgrade",
+                        "schema": {
+                            "description": "Must be terminal.",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "The connection now carries the terminal"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unprocessable Entity"
+                    },
+                    "426": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Upgrade Required"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Open a shell in a service container",
+                "tags": ["services"]
+            }
+        },
         "/api/v1/services/{name}/http": {
             "post": {
                 "operationId": "serviceHTTP",

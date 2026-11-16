@@ -15,6 +15,7 @@
         "env:generate": "varlock codegen"
     },
     "dependencies": {
+        "@battlefieldduck/xterm-svelte": "^2.3.0",
         "@better-auth/api-key": "catalog:",
         "@clowder/api": "workspace:*",
         "@clowder/auth": "workspace:*",
@@ -57,6 +58,7 @@
         "phosphor-svelte": "3.1.1",
         "runed": "0.37.1",
         "skullet": "^0.0.3",
+        "ssh2": "^1.17.0",
         "svelte-toolbelt": "^0.10.6",
         "valibot": "catalog:",
         "varlock": "catalog:",

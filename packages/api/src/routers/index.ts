@@ -10,6 +10,7 @@ import { connectionsRouter } from "./connections";
 import { bucketsRouter } from "./buckets";
 import { s3Router } from "./s3";
 import { sandboxesRouter } from "./sandboxes";
+import { terminalRouter } from "./terminal";
 import { volumesRouter } from "./volumes";
 
 const healthCheck = publicProcedure.handler(() => {
@@ -26,6 +27,7 @@ export type AppRouter = {
     buckets: typeof bucketsRouter;
     sandboxes: typeof sandboxesRouter;
     volumes: typeof volumesRouter;
+    terminal: typeof terminalRouter;
     healthCheck: typeof healthCheck;
 };
 
@@ -38,6 +40,7 @@ export const appRouter: AppRouter = {
     buckets: bucketsRouter,
     sandboxes: sandboxesRouter,
     volumes: volumesRouter,
+    terminal: terminalRouter,
     healthCheck,
 };
 
