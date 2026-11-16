@@ -20,7 +20,8 @@ describe("sshKeyPair", () => {
 
                 const derived = spawnSync("ssh-keygen", ["-y", "-f", file], { encoding: "utf8" });
 
-                expect(derived.stdout.trim()).toBe(publicKey.replace(/ clowder-test$/u, ""));
+                // The key carries its comment, so OpenSSH derives the whole public key line.
+                expect(derived.stdout.trim()).toBe(publicKey);
             } finally {
                 await rm(dir, { recursive: true, force: true });
             }

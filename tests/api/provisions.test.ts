@@ -1,4 +1,4 @@
-import { X509Certificate, createPrivateKey, createPublicKey, randomUUID } from "node:crypto";
+import { X509Certificate, createPrivateKey, randomUUID } from "node:crypto";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -99,13 +99,12 @@ describe("provisioning credentials", () => {
         // SAFETY: provisioningCredentials serializes exactly this shape.
         const secrets = JSON.parse(credentials.secrets) as { sshKey: string; tlsKey: string };
 
-        const raw = createPublicKey(secrets.sshKey)
-            .export({ format: "der", type: "spki" })
-            .subarray(-32);
+        // An OpenSSH private key embeds its public key; ssh-key.test.ts has OpenSSH read it back.
+        const key = Buffer.from(secrets.sshKey.replace(/-----[^-]+-----|\s/gu, ""), "base64");
 
         expect(type).toBe("ssh-ed25519");
         expect(comment).toBe("clowder-test");
-        expect(Buffer.from(blob!, "base64").subarray(-32).equals(raw)).toBe(true);
+        expect(key.includes(Buffer.from(blob!, "base64"))).toBe(true);
         expect(new X509Certificate(credentials.certificate).checkIP("192.168.1.10")).toBe(
             "192.168.1.10",
         );
@@ -278,7 +277,7 @@ describe("cluster provisioning (PostgreSQL)", () => {
         expect((await readFile(join(bin, "deploy"), "utf8")).trim()).toBe(cluster.sidecarToken);
         expect(await readFile(join(bin, "tls-cert"), "utf8")).toBe(cluster.sidecarCertificate);
         expect(await readFile(join(bin, "compose"), "utf8")).toContain("51443:51443@host");
-        expect(await readFile(join(bin, "key"), "utf8")).toContain("BEGIN PRIVATE KEY");
+        expect(await readFile(join(bin, "key"), "utf8")).toContain("BEGIN OPENSSH PRIVATE KEY");
         expect(uncloud.ucClient).toHaveBeenLastCalledWith(cluster.sidecarUrl, {
             token: cluster.sidecarToken,
             certificate: cluster.sidecarCertificate,
