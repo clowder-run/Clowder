@@ -752,26 +752,29 @@ export function buildCanvas(
         const services = entry?.services ?? [];
 
         // Every service is a card of its own; a database's exporters were folded into its server.
+        // A volume card is only its volume.
         const serviceCards =
-            services.length > 1
-                ? services.map((service) => ({
-                      id: serviceNodeId(resource.id, service.name),
-                      resource,
-                      entry,
-                      service,
-                      width: CARD_WIDTH,
-                      height: cardHeight(service),
-                  }))
-                : [
-                      {
-                          id: resource.id,
-                          resource,
-                          entry,
-                          service: services[0],
-                          width: CARD_WIDTH,
-                          height: cardHeight(services[0]),
-                      },
-                  ];
+            resource.type === "volume"
+                ? []
+                : services.length > 1
+                  ? services.map((service) => ({
+                        id: serviceNodeId(resource.id, service.name),
+                        resource,
+                        entry,
+                        service,
+                        width: CARD_WIDTH,
+                        height: cardHeight(service),
+                    }))
+                  : [
+                        {
+                            id: resource.id,
+                            resource,
+                            entry,
+                            service: services[0],
+                            width: CARD_WIDTH,
+                            height: cardHeight(services[0]),
+                        },
+                    ];
 
         return [
             ...serviceCards,
@@ -1085,13 +1088,18 @@ export type VolumeTarget = {
     icon: string | null;
 };
 
-/** Every service of the Compose resources whose spec can be read; buckets and broken specs have none. */
+/**
+ * Every service of the Compose resources whose spec can be read; buckets and broken specs have none,
+ * and a sandbox's VM only ever mounts its own volume.
+ */
 export function volumeTargets(
     resources: CanvasResource[],
     graph: CanvasGraph,
     logos: CanvasLogos,
 ): VolumeTarget[] {
     return resources.flatMap((resource) => {
+        if (resource.type === "sandbox") return [];
+
         const entry = graph.find((item) => item.id === resource.id);
 
         if (!entry || entry.parseError) return [];

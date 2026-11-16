@@ -5,6 +5,7 @@ import Settings from "phosphor-svelte/lib/GearSixIcon";
 import TriangleAlert from "phosphor-svelte/lib/WarningIcon";
 import User from "phosphor-svelte/lib/UserIcon";
 import Users from "phosphor-svelte/lib/UsersIcon";
+import Cube from "phosphor-svelte/lib/CubeIcon";
 import { parseAsStringLiteral } from "nuqs-svelte";
 import type { Component } from "svelte";
 
@@ -14,6 +15,7 @@ export const sections = [
     "security",
     "organization",
     "members",
+    "sandbox-images",
     "api-keys",
     "danger",
 ] as const;
@@ -59,6 +61,7 @@ export function settingsGroups(
             items: [
                 { value: "organization", label: "General", icon: Settings },
                 { value: "members", label: "Members", icon: Users },
+                { value: "sandbox-images", label: "Sandbox images", icon: Cube },
                 ...ownerItems,
             ],
         },

@@ -1,8 +1,15 @@
 import { ORPCError } from "@orpc/server";
 import { latestProvisioningDeployments } from "@clowder/db/clusters";
-import { clusters, deployments, projects, resources, s3Buckets } from "@clowder/db/schema/index";
+import {
+    clusters,
+    deployments,
+    projects,
+    resources,
+    s3Buckets,
+    sandboxes,
+} from "@clowder/db/schema/index";
 import { ucClient, unwrap } from "@clowder/uncloud";
-import { and, asc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import * as v from "valibot";
 import { queueClusterHealthCheck } from "@clowder/workflows/runtime";
@@ -324,6 +331,23 @@ export const clusterRouter = {
                         message: "Delete the S3 buckets in this cluster's projects first.",
                     });
                 }
+
+                const [sandbox] = await tx
+                    .select({ resourceId: sandboxes.resourceId })
+                    .from(sandboxes)
+                    .innerJoin(resources, eq(resources.id, sandboxes.resourceId))
+                    .innerJoin(projects, eq(projects.id, resources.projectId))
+                    .where(
+                        or(eq(sandboxes.clusterId, cluster.id), eq(projects.clusterId, cluster.id)),
+                    )
+                    .limit(1);
+
+                // Cascading would drop the rows and leave their VMs running. A sandbox can run
+                // on another cluster than its project's, and deleting either would orphan it.
+                if (sandbox)
+                    throw new ORPCError("CONFLICT", {
+                        message: "Destroy the sandboxes on this cluster first.",
+                    });
 
                 await tx.delete(clusters).where(eq(clusters.id, cluster.id));
 

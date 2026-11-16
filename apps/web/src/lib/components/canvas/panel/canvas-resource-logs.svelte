@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { downloadText } from "$lib/utils";
     import LogEmptyState from "$lib/components/projects/log-empty-state.svelte";
     import LogNotices from "$lib/components/projects/log-notices.svelte";
     import { Button } from "$lib/components/ui/button";
@@ -206,17 +207,10 @@
     }
 
     function downloadLogs() {
-        const url = URL.createObjectURL(
-            new Blob([logsAsText(visibleLogs) + "\n"], {
-                type: "text/plain",
-            }),
+        downloadText(
+            `logs-${resourceId}.log`,
+            logsAsText(visibleLogs) + "\n",
         );
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `logs-${resourceId}.log`;
-        link.click();
-        URL.revokeObjectURL(url);
     }
 
     // The table puts the date on a line of its own where each day starts.

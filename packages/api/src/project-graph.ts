@@ -1,3 +1,4 @@
+import { SANDBOX_DATA, sandboxServiceName } from "@clowder/db/sandboxes";
 import { interpolateCompose } from "@clowder/workflows/compose";
 import { parseIngressCompose } from "@clowder/workflows/ingress";
 import { referencedResourceIds } from "@clowder/workflows/references";
@@ -425,4 +426,34 @@ export function buildProjectGraph(
     });
 
     return { resources, logos };
+}
+
+/**
+ * The canvas entry of a resource without a Compose: a sandbox's VM with its volume as a tray, or a
+ * volume nothing mounts, as a card of its own.
+ */
+export function volumeGraph(volume: string, sandbox: { slug: string; image: string } | null) {
+    if (!sandbox) return { services: [], volumes: [{ name: volume, services: [], mounts: [] }] };
+
+    const service = sandboxServiceName(sandbox.slug);
+
+    return {
+        services: [
+            {
+                name: service,
+                image: sandbox.image,
+                isNew: false,
+                template: undefined,
+                domains: [],
+                internalHostname: internalHostname(service),
+                dependsOn: [],
+                volumes: [volume],
+                binds: [],
+                configs: [],
+            },
+        ] satisfies GraphService[],
+        volumes: [
+            { name: volume, services: [service], mounts: [{ service, target: SANDBOX_DATA }] },
+        ] satisfies GraphVolume[],
+    };
 }

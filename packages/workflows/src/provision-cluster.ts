@@ -19,12 +19,12 @@ import {
     serverAddress,
     sshDestination,
     sshFailure,
-    sshKeyPair,
     ucVersion,
     type Log,
     type Server,
     type Workspace,
 } from "./ssh-setup";
+import { sshKeyPair } from "./ssh-key";
 
 // What `clusters.provisioning_secrets` holds until the cluster is ready.
 type ProvisioningSecrets = { sshKey: string; tlsKey: string };
@@ -47,7 +47,7 @@ export function provisionedSidecarUrl(host: string) {
  * `host`. Everything private ends up in `secrets`, which is deleted once the cluster is ready.
  */
 export async function provisioningCredentials(host: string, comment: string) {
-    const ssh = sshKeyPair(comment);
+    const ssh = await sshKeyPair(comment);
 
     const tls = await generate([{ name: "commonName", value: host }], {
         keyType: "ec",

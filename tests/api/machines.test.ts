@@ -461,7 +461,7 @@ describe("adding machines (PostgreSQL)", () => {
         expect(add).not.toContain("--public-ip");
         expect(add).not.toContain("--name");
         expect(add).toContain("database=0");
-        expect(await readFile(join(bin, "key"), "utf8")).toContain("BEGIN PRIVATE KEY");
+        expect(await readFile(join(bin, "key"), "utf8")).toContain("BEGIN OPENSSH PRIVATE KEY");
 
         // uc reaches the cluster only through the relay, on a socket in the job's private directory.
         expect(relays).toHaveLength(1);

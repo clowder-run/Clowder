@@ -143,7 +143,7 @@ describe("templates", () => {
     });
 
     it("renders the jellyfin template with prefixed volumes and the cluster domain", () => {
-        const version = templates.find(({ appId }) => appId === "jellyfin")?.versions["12.4"];
+        const version = templates.find(({ appId }) => appId === "jellyfin")?.versions.latest;
 
         expect(version && summarizeVersion(version).required).toEqual(["MEDIA_PATH"]);
 

@@ -3,6 +3,7 @@
     import OrganizationDanger from "$lib/components/settings/organization-danger.svelte";
     import OrganizationGeneral from "$lib/components/settings/organization-general.svelte";
     import OrganizationMembers from "$lib/components/settings/organization-members.svelte";
+    import OrganizationSandboxImages from "$lib/components/settings/organization-sandbox-images.svelte";
     import PasswordSettings from "$lib/components/settings/password-settings.svelte";
     import PreferencesSettings from "$lib/components/settings/preferences-settings.svelte";
     import ProfileSettings from "$lib/components/settings/profile-settings.svelte";
@@ -55,6 +56,8 @@
                 currentUserEmail={data.user.email}
                 {canManage}
             />
+        {:else if active === "sandbox-images"}
+            <OrganizationSandboxImages />
         {:else if active === "api-keys"}
             <OrganizationApiKeys {organization} />
         {:else if active === "danger"}

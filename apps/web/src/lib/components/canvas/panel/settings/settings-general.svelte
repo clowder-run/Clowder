@@ -56,7 +56,8 @@
         </Button>
     </div>
 </div>
-{#if !isBucket && !isInternal && shows("project", "move", "copy", "duplicate")}
+<!-- Buckets and sandboxes are tied to where they were created, so they never move. -->
+{#if !isBucket && resource.type !== "sandbox" && !isInternal && shows("project", "move", "copy", "duplicate")}
     <div>
         <SettingsTitle
             text={"Project"}

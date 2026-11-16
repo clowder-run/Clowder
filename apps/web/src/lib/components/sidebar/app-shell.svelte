@@ -47,6 +47,7 @@
         ["/projects", "Projects"],
         ["/clusters", "Clusters"],
         ["/deployments", "Deployments"],
+        ["/templates", "Templates"],
         ["/git", "Git"],
         ["/s3", "S3 connections"],
     ] as const;

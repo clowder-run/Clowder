@@ -59,10 +59,12 @@ async function editableProject(db: Executor, organizationId: string, projectId: 
     return project;
 }
 
-// Buckets own provider keys and are reconciled through their own flow.
+// Buckets own provider keys, and sandboxes and volume cards hold data on their cluster; each has its own flow.
 function assertTransferable(resource: Resource) {
     if (!composeResourceTypes.some((type) => type === resource.type))
-        throw new ORPCError("BAD_REQUEST", { message: "Buckets can't be moved or copied." });
+        throw new ORPCError("BAD_REQUEST", {
+            message: `"${resource.name}" can't be moved or copied.`,
+        });
 }
 
 async function lockedResource(db: Executor, projectId: string, resourceId: string) {

@@ -29,6 +29,8 @@ export const [getCanvasActions, setCanvasActions] = createContext<{
     /** Undoes a staged deletion. */
     restore: (resourceId: string) => void;
     isPendingDelete: (resourceId: string) => boolean;
+    /** A resource's type, such as "sandbox" or "volume"; null when unknown. */
+    resourceType: (resourceId: string) => string | null;
     /** Asks to roll out a resource again even if nothing changed; the canvas confirms it first. */
     redeploy: (resourceId: string) => void;
     /** Staged edits would ship with a redeploy, so it is only offered without any. */

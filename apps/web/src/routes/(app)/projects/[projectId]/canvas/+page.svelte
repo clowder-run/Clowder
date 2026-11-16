@@ -27,12 +27,14 @@
         orpc.resources.listResources.queryOptions({
             input: { projectId },
             enabled: projectId.length > 0,
-            // Poll while a bucket job runs, so a deleted bucket leaves the canvas.
+            // Poll while a bucket or sandbox job runs, so one that is removed leaves the canvas.
             refetchInterval: (query) =>
                 query.state.data?.some(
                     (resource) =>
                         resource.bucketStatus === "provisioning" ||
-                        resource.bucketStatus === "deleting",
+                        resource.bucketStatus === "deleting" ||
+                        resource.sandboxStatus === "provisioning" ||
+                        resource.sandboxStatus === "destroying",
                 )
                     ? 2_000
                     : false,
@@ -45,6 +47,23 @@
             enabled: projectId.length > 0,
         }),
     );
+
+    // A finished job adds or removes resources (a destroyed sandbox leaves its volume card), and
+    // a card is drawn from the graph, so the graph follows the list's membership.
+    const resourceIds = $derived(
+        resourcesQuery.data?.map((resource) => resource.id).join(","),
+    );
+
+    let seenIds: string | undefined;
+
+    $effect(() => {
+        if (seenIds !== undefined && resourceIds !== seenIds)
+            void queryClient.invalidateQueries({
+                queryKey: orpc.resources.getProjectGraph.key(),
+            });
+
+        seenIds = resourceIds;
+    });
 
     const groupsQuery = createQuery(() =>
         orpc.resources.listGroups.queryOptions({

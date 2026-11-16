@@ -9,12 +9,13 @@ import Layers from "phosphor-svelte/lib/StackIcon";
 import Settings from "phosphor-svelte/lib/GearSixIcon";
 import SquareTerminal from "phosphor-svelte/lib/TerminalWindowIcon";
 import { dockerHubLogoUrl, dockerHubRepository } from "@clowder/api/docker-hub";
+import { parseImageReference } from "@clowder/api/image-reference";
 import type { AppRouterClient } from "@clowder/api/routers/index";
 import { s3Providers } from "@clowder/s3/providers";
 import type { Component } from "svelte";
 
 import type { VolumeTarget } from "../graph";
-import { imageCompose, imageServiceName, isImageReference } from "./docker-image";
+import { imageCompose, imageServiceName } from "./docker-image";
 
 export const addPages = [
     "root",
@@ -111,7 +112,7 @@ function pageEntry(id: AddPage, label: string, icon: Component): Entry {
 }
 
 /** The first page. Volumes and configs need a service to attach to. */
-export function rootEntries(hasVolumeTargets: boolean): Entry[] {
+export function rootEntries(projectId: string, hasVolumeTargets: boolean): Entry[] {
     return [
         pageEntry("git", "Git Repository", GitBranch),
         pageEntry("database", "Database", Database),
@@ -121,6 +122,15 @@ export function rootEntries(hasVolumeTargets: boolean): Entry[] {
             ? [pageEntry("volume", "Volume", HardDrive), pageEntry("config", "Config", FileCog)]
             : []),
         pageEntry("bucket", "Bucket", HardDrive),
+        {
+            id: "sandbox",
+            label: "Sandbox",
+            description: undefined,
+            logo: null,
+            icon: Box,
+            provider: undefined,
+            target: { href: `/projects/${projectId}/create/sandbox` },
+        },
         {
             id: "empty",
             label: "Empty Service",
@@ -300,12 +310,12 @@ function imageEntry(
 
 /** Docker Hub's `library/postgres` is searched as `postgres`; other registries aren't searched. */
 export function dockerHubSearchTerm(image: string) {
-    return isImageReference(image) ? dockerHubRepository(image) : null;
+    return parseImageReference(image) ? dockerHubRepository(image) : null;
 }
 
 /** What was typed comes first, then Docker Hub's other matches. */
 export function dockerEntries(image: string, results: DockerHubResult[]): Entry[] {
-    if (!isImageReference(image)) return [];
+    if (!parseImageReference(image)) return [];
 
     const repository = dockerHubRepository(image);
 

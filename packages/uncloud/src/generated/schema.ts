@@ -510,6 +510,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/services/{id}/terminal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open a shell in a service container
+         * @description With `Connection: Upgrade` and `Upgrade: terminal`, switches to a shell (bash, else sh) in a TTY. The client then sends a stream of JSON values, `{"stdin": "..."}` and `{"resize": [cols, rows]}`, and reads the raw terminal output until the shell exits and the connection closes. Errors after the switch are written to the terminal. Without the headers it answers 426.
+         */
+        get: operations["terminal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/services/{name}/http": {
         parameters: {
             query?: never;
@@ -3370,6 +3390,89 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    terminal: {
+        parameters: {
+            query?: {
+                /** @description Container name or ID. Defaults to a running container of the service. */
+                container?: string;
+            };
+            header?: {
+                /** @description Must list Upgrade. */
+                Connection?: string;
+                /** @description Must be terminal. */
+                Upgrade?: string;
+            };
+            path: {
+                /** @description Service name or ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connection now carries the terminal */
+            101: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upgrade Required */
+            426: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -282,6 +282,8 @@
         ["DeployCaddy", "Caddy"],
         ["ProvisionCluster", "Cluster creation"],
         ["AddMachine", "New machine"],
+        ["ProvisionSandbox", "New sandbox"],
+        ["DestroySandbox", "Sandbox removal"],
     ]);
 
     const sources = {

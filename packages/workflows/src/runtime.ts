@@ -6,6 +6,7 @@ import {
     setDeploymentStatus,
 } from "@clowder/db/deployments";
 import { markBucketFailed, pendingBucketRequests } from "@clowder/db/buckets";
+import { markSandboxFailed } from "@clowder/db/sandboxes";
 import { listOutdatedMonitoring, setInitializationStatus } from "@clowder/db/initialization";
 import { s3FailureMessage } from "@clowder/s3";
 import { JobSchedules, JobStore, Worker } from "effect-mq";
@@ -24,11 +25,14 @@ import {
     InitializeCluster,
     ProvisionCluster,
     ReconcileBucket,
+    DestroySandbox,
+    ProvisionSandbox,
     RollOutMonitoring,
     WatchGitSources,
 } from "./jobs";
 import { provisionCluster } from "./provision-cluster";
 import { reconcileBucket } from "./reconcile-bucket";
+import { destroySandbox, provisionSandbox } from "./sandbox";
 import { JobStoreLive, PgLive } from "./store";
 
 // One pool for the whole worker; it ends when the worker layer is released.
@@ -190,6 +194,24 @@ function jobHandlersLive(db: Database, watchGitSources: GitWatcher) {
                 ),
             { concurrency: 2 },
         ),
+        ProvisionSandbox.toLayer(
+            ({ deploymentId }) =>
+                attempt(
+                    (signal) => provisionSandbox(db, deploymentId, signal),
+                    // provisionSandbox records its own failure; deployCompose masks the password.
+                    (error) => error,
+                ),
+            { concurrency: 2 },
+        ),
+        DestroySandbox.toLayer(
+            ({ deploymentId }) =>
+                attempt(
+                    (signal) => destroySandbox(db, deploymentId, signal),
+                    // destroySandbox records its own failure; uc's messages carry no secrets.
+                    (error) => error,
+                ),
+            { concurrency: 2 },
+        ),
         RollOutMonitoring.toLayer(
             ({ clusterId, version }) =>
                 attempt(
@@ -260,6 +282,10 @@ function deploymentFailureMessage(name: string) {
 
     if (name === "AddMachine") return "Adding the machine failed.";
 
+    if (name === "ProvisionSandbox") return "Creating the sandbox failed.";
+
+    if (name === "DestroySandbox") return "Destroying the sandbox failed.";
+
     return RESOURCE_FAILURE_MESSAGE;
 }
 
@@ -296,7 +322,9 @@ async function recordFailureAsync(db: Database, failure: Worker.JobFailure) {
         failure.name === "DeployResource" ||
         failure.name === "DeployCaddy" ||
         failure.name === "ProvisionCluster" ||
-        failure.name === "AddMachine"
+        failure.name === "AddMachine" ||
+        failure.name === "ProvisionSandbox" ||
+        failure.name === "DestroySandbox"
     ) {
         if (!deployment || !["queued", "running"].includes(deployment.status)) return;
         const cause = Cause.squash(failure.cause);
@@ -314,6 +342,13 @@ async function recordFailureAsync(db: Database, failure: Worker.JobFailure) {
             event: "failed",
         });
         await setDeploymentStatus(db, deployment.id, "failed", reason);
+
+        // A timed-out attempt never reached its own catch, so the sandbox is settled here.
+        if (
+            (failure.name === "ProvisionSandbox" || failure.name === "DestroySandbox") &&
+            deployment.resourceId
+        )
+            await markSandboxFailed(db, deployment.resourceId, failure.name);
 
         return;
     }
@@ -341,6 +376,7 @@ function workerLive(db: Database) {
             initialize: { concurrency: 1 },
             deploy: { concurrency: 4 },
             buckets: { concurrency: 2 },
+            sandboxes: { concurrency: 2 },
             monitoring: { concurrency: 1 },
             health: { concurrency: 1 },
             git: { concurrency: 2 },
@@ -363,6 +399,8 @@ function workerLive(db: Database) {
                 failure.name !== "DeployCaddy" &&
                 failure.name !== "ProvisionCluster" &&
                 failure.name !== "AddMachine" &&
+                failure.name !== "ProvisionSandbox" &&
+                failure.name !== "DestroySandbox" &&
                 failure.name !== "InitializeCluster"
             )
                 return Effect.void;
@@ -433,7 +471,9 @@ export async function cancelDeploymentJob(
         | "DeployResource"
         | "DeployCaddy"
         | "ProvisionCluster"
-        | "AddMachine" = "InitializeCluster",
+        | "AddMachine"
+        | "ProvisionSandbox"
+        | "DestroySandbox" = "InitializeCluster",
 ): Promise<void> {
     try {
         const job = {
@@ -442,6 +482,8 @@ export async function cancelDeploymentJob(
             DeployCaddy,
             ProvisionCluster,
             AddMachine,
+            ProvisionSandbox,
+            DestroySandbox,
         }[name];
 
         const program = job
@@ -463,7 +505,7 @@ async function pollOutboxAsync(db: Database) {
 
     const queued = await db.$client.query<{ deploymentId: string; name: string }>(
         `SELECT id AS "deploymentId", name FROM deployments
-         WHERE status = 'queued' AND name IN ('DeployResource', 'DeployCaddy', 'ProvisionCluster', 'AddMachine')`,
+         WHERE status = 'queued' AND name IN ('DeployResource', 'DeployCaddy', 'ProvisionCluster', 'AddMachine', 'ProvisionSandbox', 'DestroySandbox')`,
     );
 
     const buckets = await pendingBucketRequests(db);
@@ -479,6 +521,9 @@ async function pollOutboxAsync(db: Database) {
         monitoring,
         provisions: queued.rows.filter((row) => row.name === "ProvisionCluster"),
         machines: queued.rows.filter((row) => row.name === "AddMachine"),
+        sandboxes: queued.rows.filter(
+            (row) => row.name === "ProvisionSandbox" || row.name === "DestroySandbox",
+        ),
     };
 }
 
@@ -486,7 +531,16 @@ async function pollOutboxAsync(db: Database) {
 export function pollInitializationOutbox(db: Database) {
     return Effect.promise(() => pollOutboxAsync(db)).pipe(
         Effect.flatMap(
-            ({ initialization, resources, caddy, buckets, monitoring, provisions, machines }) =>
+            ({
+                initialization,
+                resources,
+                caddy,
+                buckets,
+                monitoring,
+                provisions,
+                machines,
+                sandboxes,
+            }) =>
                 Effect.forEach(
                     [
                         ...initialization.map((row) =>
@@ -509,6 +563,13 @@ export function pollInitializationOutbox(db: Database) {
                             ProvisionCluster.enqueue({ deploymentId }),
                         ),
                         ...machines.map(({ deploymentId }) => AddMachine.enqueue({ deploymentId })),
+                        ...sandboxes.map(({ deploymentId, name }) =>
+                            (name === "DestroySandbox" ? DestroySandbox : ProvisionSandbox).enqueue(
+                                {
+                                    deploymentId,
+                                },
+                            ),
+                        ),
                     ],
                     (enqueue) => enqueue.pipe(Effect.catch(() => Effect.void)),
                 ),
@@ -526,6 +587,8 @@ export {
     InitializeCluster,
     ProvisionCluster,
     ReconcileBucket,
+    DestroySandbox,
+    ProvisionSandbox,
     RollOutMonitoring,
 };
 

@@ -10,6 +10,7 @@
     import Box from "phosphor-svelte/lib/CubeIcon";
     import X from "phosphor-svelte/lib/XIcon";
     import {
+        parseAsBoolean,
         parseAsString,
         parseAsStringLiteral,
         useQueryState,
@@ -19,11 +20,13 @@
     import { fly } from "svelte/transition";
     import type { CanvasResource, CanvasService } from "../graph";
     import CanvasCompose from "./canvas-compose.svelte";
+    import CanvasSandboxCompose from "./canvas-sandbox-compose.svelte";
     import DatabaseConfig from "./database/database-config.svelte";
     import DatabaseData from "./database/database-data.svelte";
     import DatabaseStats from "./database/database-stats.svelte";
     import CanvasDeployments from "./canvas-deployments.svelte";
     import CanvasSettings from "./canvas-settings.svelte";
+    import CanvasTerminal from "./canvas-terminal.svelte";
     import CanvasBucketVariables from "./canvas-bucket-variables.svelte";
     import CanvasVariables from "./canvas-variables.svelte";
 
@@ -64,6 +67,7 @@
         "compose",
         "metrics",
         "logs",
+        "terminal",
         "settings",
     ] as const;
 
@@ -76,6 +80,7 @@
         compose: "Compose",
         metrics: "Metrics",
         logs: "Logs",
+        terminal: "Terminal",
         settings: "Settings",
     };
 
@@ -92,16 +97,32 @@
         resourceId: resource.id,
     });
 
-    // Buckets have no deployments, containers or logs of their own; only buckets hold files.
+    // Not linked anywhere: `?showcompose=true` reveals the Compose a sandbox deploys.
+    const showCompose = useQueryState(
+        "showcompose",
+        parseAsBoolean.withDefault(false),
+    );
+
+    // Buckets have no deployments, containers or logs of their own; only buckets hold files. A
+    // sandbox's deployments are its provisioning and destroy attempts.
     const visibleTabs = $derived(
         isBucket
             ? (["files", "variables", "settings"] as const)
-            : tabs.filter(
-                  (name) =>
-                      name !== "files" &&
-                      ((name !== "tables" && name !== "config") ||
-                          isPostgres),
-              ),
+            : resource.type === "sandbox"
+              ? showCompose.current
+                  ? ([
+                        "deployments",
+                        "terminal",
+                        "compose",
+                        "settings",
+                    ] as const)
+                  : (["deployments", "terminal", "settings"] as const)
+              : tabs.filter(
+                    (name) =>
+                        name !== "files" &&
+                        ((name !== "tables" && name !== "config") ||
+                            isPostgres),
+                ),
     );
 
     // Matches project-canvas, so Back steps through tabs and stacked logs.
@@ -137,6 +158,7 @@
 
     const fullBleed = $derived(
         active === "logs" ||
+            active === "terminal" ||
             active === "deployments" ||
             active === "files" ||
             active === "settings" ||
@@ -258,6 +280,7 @@
             class={[
                 "min-h-0 flex-1 bg-card p-0",
                 active === "logs" ||
+                active === "terminal" ||
                 active === "deployments" ||
                 active === "files" ||
                 active === "tables" ||
@@ -293,6 +316,8 @@
                 <CanvasBucketVariables {resource} />
             {:else if active === "variables"}
                 <CanvasVariables {resource} />
+            {:else if active === "compose" && resource.type === "sandbox"}
+                <CanvasSandboxCompose {resource} />
             {:else if active === "compose"}
                 <CanvasCompose {resource} />
             {:else if active === "metrics"}
@@ -312,6 +337,15 @@
                     serviceName={selectedService}
                     focused={!stacked}
                 />
+            {:else if active === "terminal"}
+                <!-- A new service gets its own shell. -->
+                {#key selectedService}
+                    <CanvasTerminal
+                        projectId={resource.projectId}
+                        resourceId={resource.id}
+                        service={selectedService}
+                    />
+                {/key}
             {:else}
                 <CanvasSettings {resource} {services} />
             {/if}

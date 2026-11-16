@@ -44,6 +44,7 @@
     import ChartColumn from "phosphor-svelte/lib/ChartBarIcon";
     import Container from "phosphor-svelte/lib/ShippingContainerIcon";
     import Copy from "phosphor-svelte/lib/CopyIcon";
+    import Cube from "phosphor-svelte/lib/CubeIcon";
     import CopyPlus from "phosphor-svelte/lib/CopySimpleIcon";
     import FolderInput from "phosphor-svelte/lib/FolderPlusIcon";
     import Database from "phosphor-svelte/lib/DatabaseIcon";
@@ -159,8 +160,12 @@
             </ContextMenuItem>
         {:else if volumeNodeId}
             {@const nodeId = volumeNodeId}
+            {@const owner = actions.resourceType(resourceId ?? "")}
+            <!-- A sandbox's volume and a volume card have no Compose: only their settings, and a card's delete. -->
+            {@const composed =
+                owner !== "sandbox" && owner !== "volume"}
             <!-- Railway's volume menu: disconnect, its two tabs, then delete. -->
-            {#if actions.isVolumeMounted(nodeId)}
+            {#if composed && actions.isVolumeMounted(nodeId)}
                 <ContextMenuItem
                     onclick={() => actions.disconnectVolume(nodeId)}
                 >
@@ -169,26 +174,30 @@
                 </ContextMenuItem>
                 <ContextMenuSeparator />
             {/if}
-            <ContextMenuItem
-                onclick={() => onopen(nodeId, "metrics")}
-            >
-                <ChartColumn aria-hidden="true" />
-                View Metrics
-            </ContextMenuItem>
+            {#if composed}
+                <ContextMenuItem
+                    onclick={() => onopen(nodeId, "metrics")}
+                >
+                    <ChartColumn aria-hidden="true" />
+                    View Metrics
+                </ContextMenuItem>
+            {/if}
             <ContextMenuItem
                 onclick={() => onopen(nodeId, "settings")}
             >
                 <Settings aria-hidden="true" />
                 View Settings
             </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-                variant="destructive"
-                onclick={() => actions.removeVolume(nodeId)}
-            >
-                <Trash2 aria-hidden="true" />
-                Delete volume
-            </ContextMenuItem>
+            {#if owner !== "sandbox"}
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                    variant="destructive"
+                    onclick={() => actions.removeVolume(nodeId)}
+                >
+                    <Trash2 aria-hidden="true" />
+                    Delete volume
+                </ContextMenuItem>
+            {/if}
         {:else if target?.kind === "group"}
             {@const id = target.groupId}
             <!-- Railway's group actions, on the frame's own right-click too. -->
@@ -405,6 +414,13 @@
                 <ContextMenuItem onclick={() => onaddpage("bucket")}>
                     <HardDrive aria-hidden="true" />
                     Bucket
+                </ContextMenuItem>
+
+                <ContextMenuItem
+                    onclick={() => void goto(`${create}/sandbox`)}
+                >
+                    <Cube aria-hidden="true" />
+                    Sandbox
                 </ContextMenuItem>
 
                 <ContextMenuItem

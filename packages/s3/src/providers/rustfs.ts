@@ -1,14 +1,9 @@
 import { SignatureV4 } from "@smithy/signature-v4";
 import type { Checksum, SourceData } from "@smithy/types";
 import { createHash, createHmac, randomBytes, type Hash, type Hmac } from "node:crypto";
-import https from "node:https";
 import * as v from "valibot";
-import {
-    guardedHttpsAgent,
-    normalizeS3Endpoint,
-    type S3BucketUsage,
-    type S3Target,
-} from "../client";
+import { normalizeS3Endpoint, type S3BucketUsage, type S3Target } from "../client";
+import { guardedHttpsRequest } from "../guarded-request";
 
 // The `/rustfs/admin/v3` paths take plain JSON; the MinIO-compatible paths encrypt bodies.
 const ADMIN_PATH = "/rustfs/admin/v3";
@@ -50,30 +45,6 @@ class NodeSha256 implements Checksum {
     }
 }
 
-function send(url: URL, method: string, headers: Record<string, string>, body: string) {
-    return new Promise<{ status: number; text: string }>((resolve, reject) => {
-        const request = https.request(
-            url,
-            { method, headers, agent: guardedHttpsAgent(), timeout: 10_000 },
-            (response) => {
-                const chunks: Buffer[] = [];
-                response.on("data", (chunk: Buffer) => chunks.push(chunk));
-                response.on("error", reject);
-                response.on("end", () =>
-                    resolve({
-                        status: response.statusCode ?? 0,
-                        text: Buffer.concat(chunks).toString("utf8"),
-                    }),
-                );
-            },
-        );
-
-        request.on("timeout", () => request.destroy(new Error("RustFS did not respond in time.")));
-        request.on("error", reject);
-        request.end(body);
-    });
-}
-
 async function admin(
     target: S3Target,
     method: "GET" | "PUT" | "DELETE",
@@ -107,7 +78,7 @@ async function admin(
         body,
     });
 
-    return send(url, method, signed.headers, body);
+    return guardedHttpsRequest(url, method, signed.headers, body);
 }
 
 // RustFS answers with an S3-style XML error; its code and message say why it refused.

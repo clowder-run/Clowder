@@ -313,7 +313,8 @@
                 >
                     View logs
                 </MenuItem>
-                {#if deployment === live && !changed}
+                <!-- A sandbox is redeployed by retrying, not from a Compose spec. -->
+                {#if deployment === live && !changed && resource.type !== "sandbox"}
                     <MenuItem
                         disabled={pending !== undefined}
                         onclick={redeploy}

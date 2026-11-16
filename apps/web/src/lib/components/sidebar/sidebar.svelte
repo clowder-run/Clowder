@@ -19,6 +19,7 @@
     import LayoutDashboard from "phosphor-svelte/lib/HouseIcon";
     import Rocket from "phosphor-svelte/lib/RocketIcon";
     import Server from "phosphor-svelte/lib/HardDrivesIcon";
+    import Stack from "phosphor-svelte/lib/StackIcon";
     import Settings from "phosphor-svelte/lib/GearSixIcon";
     import Shield from "phosphor-svelte/lib/ShieldCheckIcon";
     import OrgSwitcher from "./org-switcher.svelte";
@@ -56,6 +57,7 @@
         { title: "Home", url: "/", icon: LayoutDashboard },
         { title: "Projects", url: "/projects", icon: FolderOpen },
         { title: "Deployments", url: "/deployments", icon: Rocket },
+        { title: "Templates", url: "/templates", icon: Stack },
     ];
 
     const configLinks = [

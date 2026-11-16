@@ -16,3 +16,14 @@ export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, "childre
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
 export type RenameTypeToMode<T> = T extends { type: infer M } ? Omit<T, "type"> & { mode: M } : T;
+
+/** Saves `text` as a file named `name` through the browser's download. */
+export function downloadText(name: string, text: string) {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(url);
+}

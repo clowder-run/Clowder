@@ -248,8 +248,9 @@ export const resourceDeployRouter = {
 
             return { id: row.resource.id };
         }),
-    // Removes the resources' services from the cluster (volumes stay), then the resources. One
-    // batch, so resources that reference each other can be deleted together.
+    // Removes the resources' services from the cluster, then the resources; their volumes stay on the
+    // machines and on the canvas, as cards. One batch, so resources that reference each other can be
+    // deleted together.
     deleteResource: organizationProcedure
         .input(
             v.object({
@@ -283,6 +284,7 @@ export const resourceDeployRouter = {
                     tx,
                     rows[0]!.clusterId,
                     rows.map((row) => row.resource),
+                    true,
                 );
 
                 return { ids: rows.map((row) => row.resource.id) };

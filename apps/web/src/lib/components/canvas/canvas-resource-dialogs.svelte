@@ -194,11 +194,18 @@
         volumeDeleteError = "";
 
         try {
-            await client.resources.deleteVolume({
-                projectId,
-                resourceId: resource.id,
-                volume,
-            });
+            // A volume card is the volume itself; any other is staged out of a Compose file.
+            if (resource.type === "volume")
+                await client.volumes.remove({
+                    projectId,
+                    resourceId: resource.id,
+                });
+            else
+                await client.resources.deleteVolume({
+                    projectId,
+                    resourceId: resource.id,
+                    volume,
+                });
 
             if (selected === volumeNodeId(resource.id, volume))
                 onclose();
@@ -326,7 +333,9 @@
             }
         }
         title={`Delete ${pendingVolumeDelete.volume}?`}
-        description="It is unmounted from its services and leaves the Compose file on the next deploy. The data stays on the machines."
+        description={pendingVolumeDelete.resource.type === "volume"
+            ? "Its data is deleted from every machine it's on. This can't be undone."
+            : "It is unmounted from its services and leaves the Compose file on the next deploy. The data stays on the machines."}
         confirmLabel="Delete volume"
         pending={deletingVolume}
         error={volumeDeleteError}

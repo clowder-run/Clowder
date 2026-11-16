@@ -316,6 +316,9 @@
         isPendingDelete: (resourceId) =>
             graph.find((item) => item.id === resourceId)
                 ?.pendingDelete ?? false,
+        resourceType: (resourceId) =>
+            resources.find((item) => item.id === resourceId)?.type ??
+            null,
         redeploy: (resourceId) => dialogs?.askRedeploy(resourceId),
         canRedeploy: (resourceId) =>
             !graph.find((item) => item.id === resourceId)?.changed,
@@ -331,7 +334,8 @@
 
             if (
                 resource?.deploymentStatus !== "ready" ||
-                resource.bucketStatus
+                resource.bucketStatus ||
+                resource.sandboxStatus
             )
                 return undefined;
 
@@ -566,9 +570,12 @@
         volumeTargets(resources, graph, logos),
     );
 
+    // Links name a volume card by its resource id, like any card; the card is its one volume.
     const selectedVolume = $derived(
         selectedNode?.volume === undefined
-            ? undefined
+            ? selectedResource?.type === "volume"
+                ? selectedGraph?.volumes[0]
+                : undefined
             : selectedGraph?.volumes.find(
                   (volume) => volume.name === selectedNode.volume,
               ),
@@ -1387,7 +1394,10 @@
         ).map((service) => service.name)}
         targets={resources.filter(
             (resource) =>
-                resource.id !== from.id && resource.type !== "bucket",
+                resource.id !== from.id &&
+                resource.type !== "bucket" &&
+                resource.type !== "sandbox" &&
+                resource.type !== "volume",
         )}
         pending={moving}
         error={moveError}

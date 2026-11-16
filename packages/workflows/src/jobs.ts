@@ -137,6 +137,45 @@ export const ReconcileBucket: Job.Job<
     },
 });
 
+const sandboxDefaults = {
+    // No retries: the attempt's deployment shows why it failed, and Retry starts a new one.
+    attempts: 1,
+    // Pulling a VM image to a new machine takes a while.
+    timeout: "15 minutes",
+    keep: {
+        completed: { age: "1 day" },
+        failed: { age: "30 days" },
+    },
+} as const;
+
+// Each attempt is its own `ProvisionSandbox` deployment of the sandbox.
+export const ProvisionSandbox: Job.Job<
+    "ProvisionSandbox",
+    typeof resourcePayload,
+    Schema.Void,
+    Schema.Never
+> = Job.make("ProvisionSandbox", {
+    payload: resourcePayload,
+    success: Schema.Void,
+    idempotencyKey: ({ deploymentId }) => deploymentId,
+    queue: "sandboxes",
+    defaults: sandboxDefaults,
+});
+
+// Each attempt is its own `DestroySandbox` deployment of the sandbox.
+export const DestroySandbox: Job.Job<
+    "DestroySandbox",
+    typeof resourcePayload,
+    Schema.Void,
+    Schema.Never
+> = Job.make("DestroySandbox", {
+    payload: resourcePayload,
+    success: Schema.Void,
+    idempotencyKey: ({ deploymentId }) => deploymentId,
+    queue: "sandboxes",
+    defaults: sandboxDefaults,
+});
+
 // The hourly schedule checks everything; a manual run from the cluster page passes its cluster.
 const healthCheckPayload = Schema.Struct({ clusterId: Schema.optional(Schema.String) });
 

@@ -15,6 +15,7 @@
     import Network from "phosphor-svelte/lib/TreeStructureIcon";
     import Rocket from "phosphor-svelte/lib/RocketIcon";
     import SlidersHorizontal from "phosphor-svelte/lib/SlidersHorizontalIcon";
+    import Terminal from "phosphor-svelte/lib/TerminalWindowIcon";
     import { createQuery } from "@tanstack/svelte-query";
     import { parseAsString, useQueryState } from "nuqs-svelte";
     import type { Component } from "svelte";
@@ -24,6 +25,7 @@
     import SettingsDeploy from "./settings/settings-deploy.svelte";
     import SettingsGeneral from "./settings/settings-general.svelte";
     import SettingsNetworking from "./settings/settings-networking.svelte";
+    import SettingsSandbox from "./settings/settings-sandbox.svelte";
     import SettingsSource from "./settings/settings-source.svelte";
     import SettingsStorage from "./settings/settings-storage.svelte";
 
@@ -53,6 +55,11 @@
     const details = $derived(resourceQuery.data);
 
     const isBucket = $derived(resource.type === "bucket");
+
+    const isSandbox = $derived(resource.type === "sandbox");
+
+    // Source, networking and deploy settings only apply to Compose resources.
+    const isCompose = $derived(!isBucket && !isSandbox);
 
     // System-managed resources keep their source and cannot be deleted.
     // Treated as internal until the project loads, so Source and Delete never flash for one.
@@ -139,11 +146,25 @@
 
     const sections: Section[] = $derived([
         {
+            id: "connection",
+            title: "Connection",
+            icon: Terminal,
+            visible:
+                isSandbox &&
+                shows(
+                    "connection",
+                    "ssh",
+                    "password",
+                    "image",
+                    "machine",
+                ),
+        },
+        {
             id: "source",
             title: "Source",
             icon: Code,
             visible:
-                !isBucket &&
+                isCompose &&
                 !isInternal &&
                 shows(
                     "source",
@@ -163,7 +184,7 @@
             title: "Networking",
             icon: Network,
             visible:
-                !isBucket &&
+                isCompose &&
                 shows(
                     "networking",
                     "public",
@@ -179,7 +200,7 @@
             title: "Deploy",
             icon: Rocket,
             visible:
-                !isBucket &&
+                isCompose &&
                 shows(
                     "deploy",
                     "prefix names",
@@ -248,7 +269,9 @@
 />
 
 {#snippet body(id: string)}
-    {#if id === "source"}
+    {#if id === "connection"}
+        <SettingsSandbox {resource} />
+    {:else if id === "source"}
         <SettingsSource {git} {shows} />
     {:else if id === "networking"}
         <SettingsNetworking
@@ -283,7 +306,7 @@
 <div class="@container flex min-h-full flex-col">
     <!-- Railway's filter bar, pinned under the tabs. -->
     <div
-        class="sticky top-0 z-10 border-b bg-card/70 backdrop-blur-lg px-3 py-3"
+        class="sticky top-0 z-10 border-b rounded-t-xl bg-card/70 backdrop-blur-lg px-3 py-3"
     >
         <div class="relative">
             <Input
