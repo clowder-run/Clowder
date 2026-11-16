@@ -18,6 +18,7 @@ import {
 } from "@clowder/db/schema/index";
 import { interpolateComposeVariables } from "@clowder/workflows/ingress";
 import { cancelDeploymentJob } from "@clowder/workflows/runtime";
+import { markSandboxFailed } from "@clowder/db/sandboxes";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { parseEnv } from "node:util";
 import * as v from "valibot";
@@ -186,13 +187,19 @@ export const deploymentsRouter = {
             const job =
                 deployment.name === "DeployCaddy" ||
                 deployment.name === "ProvisionCluster" ||
-                deployment.name === "AddMachine"
+                deployment.name === "AddMachine" ||
+                deployment.name === "ProvisionSandbox" ||
+                deployment.name === "DestroySandbox"
                     ? deployment.name
                     : deployment.resourceId
                       ? "DeployResource"
                       : "InitializeCluster";
 
             await cancelDeploymentJob(deployment.jobId, job);
+
+            // Settled as failed, so it can be retried or destroyed rather than stay in progress.
+            if ((job === "ProvisionSandbox" || job === "DestroySandbox") && deployment.resourceId)
+                await markSandboxFailed(db, deployment.resourceId);
 
             if (job === "InitializeCluster")
                 await db

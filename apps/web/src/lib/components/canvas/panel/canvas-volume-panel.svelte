@@ -61,7 +61,19 @@
         }),
     );
 
-    const active = $derived(tab.current ?? tabs[0]);
+    // A sandbox's volume and a volume card have no Compose to edit, and metrics read Compose names.
+    const composed = $derived(
+        resource.type !== "sandbox" && resource.type !== "volume",
+    );
+
+    const visibleTabs = $derived(
+        composed ? tabs : (["settings"] as const),
+    );
+
+    const active = $derived(
+        visibleTabs.find((name) => name === tab.current) ??
+            visibleTabs[0],
+    );
 
     let connecting = $state(false);
 
@@ -222,7 +234,7 @@
         role="tablist"
         aria-label="{volume.name} sections"
     >
-        {#each tabs as name (name)}
+        {#each visibleTabs as name (name)}
             <button
                 type="button"
                 role="tab"
@@ -258,89 +270,104 @@
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 {/if}
-                <section class="space-y-4">
-                    <h3 class="text-xl text-muted-foreground">
-                        Connection
-                    </h3>
-                    {#each volume.mounts as mount (`${mount.service}:${mount.target}`)}
-                        <div class="space-y-2">
-                            <p class="text-sm font-semibold">
-                                Mount Path
-                                {#if services.length > 1}
-                                    <span
-                                        class="font-normal text-muted-foreground"
-                                    >
-                                        · {mount.service}
-                                    </span>
-                                {/if}
-                            </p>
-                            <div class="flex gap-2">
-                                <Input
-                                    class="font-mono"
-                                    aria-label="Mount path in {mount.service}"
-                                    spellcheck={false}
-                                    disabled={pending}
-                                    bind:value={
-                                        () =>
-                                            typed[
-                                                `${mount.service}:${mount.target}`
-                                            ] ?? mount.target,
-                                        (value) =>
-                                            (typed[
-                                                `${mount.service}:${mount.target}`
-                                            ] = value)
-                                    }
-                                    onblur={() =>
-                                        void remount(
-                                            mount.service,
-                                            mount.target,
-                                        )}
-                                    onkeydown={(event) => {
-                                        if (event.key === "Enter")
-                                            event.currentTarget.blur();
-                                    }}
-                                />
-                                <Button
-                                    variant="outline"
-                                    disabled={pending}
-                                    onclick={() =>
-                                        disconnect(mount.service)}
-                                >
-                                    <Unplug
-                                        class="size-4"
-                                        aria-hidden="true"
+                {#if volume.mounts.length > 0 || targets.length > 0}
+                    <section class="space-y-4">
+                        <h3 class="text-xl text-muted-foreground">
+                            Connection
+                        </h3>
+                        {#each volume.mounts as mount (`${mount.service}:${mount.target}`)}
+                            <div class="space-y-2">
+                                <p class="text-sm font-semibold">
+                                    Mount Path
+                                    {#if services.length > 1}
+                                        <span
+                                            class="font-normal text-muted-foreground"
+                                        >
+                                            · {mount.service}
+                                        </span>
+                                    {/if}
+                                </p>
+                                <div class="flex gap-2">
+                                    <Input
+                                        class="font-mono"
+                                        aria-label="Mount path in {mount.service}"
+                                        spellcheck={false}
+                                        disabled={pending}
+                                        readonly={!composed}
+                                        bind:value={
+                                            () =>
+                                                typed[
+                                                    `${mount.service}:${mount.target}`
+                                                ] ?? mount.target,
+                                            (value) =>
+                                                (typed[
+                                                    `${mount.service}:${mount.target}`
+                                                ] = value)
+                                        }
+                                        onblur={() =>
+                                            void remount(
+                                                mount.service,
+                                                mount.target,
+                                            )}
+                                        onkeydown={(event) => {
+                                            if (event.key === "Enter")
+                                                event.currentTarget.blur();
+                                        }}
                                     />
-                                    Disconnect
-                                </Button>
+                                    {#if composed}
+                                        <Button
+                                            variant="outline"
+                                            disabled={pending}
+                                            onclick={() =>
+                                                disconnect(
+                                                    mount.service,
+                                                )}
+                                        >
+                                            <Unplug
+                                                class="size-4"
+                                                aria-hidden="true"
+                                            />
+                                            Disconnect
+                                        </Button>
+                                    {/if}
+                                </div>
                             </div>
-                        </div>
-                    {/each}
-                    {#if targets.length > 0}
-                        <Button
-                            variant="outline"
-                            disabled={pending}
-                            onclick={() => {
-                                error = "";
-                                connecting = true;
-                            }}
+                        {/each}
+                        {#if targets.length > 0}
+                            <Button
+                                variant="outline"
+                                disabled={pending}
+                                onclick={() => {
+                                    error = "";
+                                    connecting = true;
+                                }}
+                            >
+                                Connect to service
+                            </Button>
+                        {/if}
+                    </section>
+                {/if}
+                <!-- A sandbox's volume goes when the sandbox is destroyed, then as a card of its own. -->
+                {#if resource.type !== "sandbox"}
+                    <section class="space-y-4">
+                        <h3
+                            class="text-xl text-destructive-foreground"
                         >
-                            Connect to service
+                            Delete Volume
+                        </h3>
+                        <Button
+                            variant="destructive"
+                            disabled={pending}
+                            onclick={onremove}
+                        >
+                            <Trash2
+                                class="size-4"
+                                aria-hidden="true"
+                            />
+                            Delete Volume
                         </Button>
-                    {/if}
-                </section>
-                <section class="space-y-4">
-                    <h3 class="text-xl text-destructive-foreground">
-                        Delete Volume
-                    </h3>
-                    <Button
-                        variant="destructive"
-                        disabled={pending}
-                        onclick={onremove}
-                    >
-                        <Trash2 class="size-4" aria-hidden="true" />
-                        Delete Volume
-                    </Button>
-                </section>
+                    </section>
+                {/if}
             </div>
         {/if}
     </div>

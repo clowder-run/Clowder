@@ -1,6 +1,6 @@
 services:
     ntfy:
-        image: binwiederhier/ntfy:v2.37.1
+        image: binwiederhier/ntfy:latest
         restart: unless-stopped
         init: true
         command:

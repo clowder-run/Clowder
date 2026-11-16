@@ -8,6 +8,7 @@ import {
     resources,
     resourceDeploymentInputs,
     s3Buckets,
+    sandboxes,
     type DeploymentMetadata,
     type DeploymentStatus,
 } from "@clowder/db/schema/index";
@@ -336,10 +337,12 @@ export const resourcesRouter = {
                     deploymentFinishedAt: latest.finishedAt,
                     deploymentSource: latest.source,
                     bucketStatus: s3Buckets.status,
+                    sandboxStatus: sandboxes.status,
                 })
                 .from(resources)
                 .leftJoin(latest, eq(latest.resourceId, resources.id))
                 .leftJoin(s3Buckets, eq(s3Buckets.resourceId, resources.id))
+                .leftJoin(sandboxes, eq(sandboxes.resourceId, resources.id))
                 .where(eq(resources.projectId, input.projectId))
                 .orderBy(asc(resources.createdAt));
         }),

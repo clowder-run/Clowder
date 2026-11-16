@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { generateKeyPairSync } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -23,26 +22,6 @@ export async function createWorkspace(prefix: string): Promise<Workspace> {
     const dir = await mkdtemp(join(tmpdir(), prefix));
 
     return { dir, config: join(dir, "config.yaml"), key: join(dir, "id_ed25519") };
-}
-
-// An SSH wire-format string: a 32-bit length, then the bytes.
-function sshString(value: Buffer) {
-    const length = Buffer.alloc(4);
-    length.writeUInt32BE(value.length);
-
-    return Buffer.concat([length, value]);
-}
-
-/** A single-use ed25519 key: the OpenSSH public key to authorize, and the PEM private key. */
-export function sshKeyPair(comment: string) {
-    const ssh = generateKeyPairSync("ed25519");
-    const raw = ssh.publicKey.export({ format: "der", type: "spki" }).subarray(-32);
-    const blob = Buffer.concat([sshString(Buffer.from("ssh-ed25519")), sshString(raw)]);
-
-    return {
-        publicKey: `ssh-ed25519 ${blob.toString("base64")} ${comment}`,
-        privateKey: ssh.privateKey.export({ format: "pem", type: "pkcs8" }).toString(),
-    };
 }
 
 /** `user@host:port`, with IPv6 hosts in brackets. */

@@ -1,6 +1,13 @@
 import { ORPCError } from "@orpc/server";
 import { latestProvisioningDeployments } from "@clowder/db/clusters";
-import { clusters, deployments, projects, resources, s3Buckets } from "@clowder/db/schema/index";
+import {
+    clusters,
+    deployments,
+    projects,
+    resources,
+    s3Buckets,
+    sandboxes,
+} from "@clowder/db/schema/index";
 import { ucClient, unwrap } from "@clowder/uncloud";
 import { and, asc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -324,6 +331,18 @@ export const clusterRouter = {
                         message: "Delete the S3 buckets in this cluster's projects first.",
                     });
                 }
+
+                const [sandbox] = await tx
+                    .select({ resourceId: sandboxes.resourceId })
+                    .from(sandboxes)
+                    .where(eq(sandboxes.clusterId, cluster.id))
+                    .limit(1);
+
+                // Cascading would drop the rows and leave their VMs running.
+                if (sandbox)
+                    throw new ORPCError("CONFLICT", {
+                        message: "Destroy the sandboxes on this cluster first.",
+                    });
 
                 await tx.delete(clusters).where(eq(clusters.id, cluster.id));
 

@@ -398,6 +398,7 @@ describe("core project and resource isolation (PostgreSQL)", () => {
                     deploymentFinishedAt: null,
                     deploymentSource: null,
                     bucketStatus: null,
+                    sandboxStatus: null,
                 }),
             ),
         );

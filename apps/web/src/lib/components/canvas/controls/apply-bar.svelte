@@ -128,7 +128,10 @@
             // One batch, so resources that reference each other don't block each other. Buckets
             // go after it, since the apps reading them must be gone first.
             const resourceIds = deletions.flatMap(({ resource }) =>
-                resource.type === "bucket" ? [] : [resource.id],
+                resource.type === "bucket" ||
+                resource.type === "sandbox"
+                    ? []
+                    : [resource.id],
             );
 
             const buckets = deletions.flatMap(({ resource }) =>
@@ -158,6 +161,22 @@
                                 : `${bucket.name} could not be deleted.`,
                         );
                     });
+
+            // A sandbox's DestroySandbox job removes its VM, then the resource.
+            for (const { resource } of deletions)
+                if (resource.type === "sandbox")
+                    await client.sandboxes
+                        .destroy({
+                            projectId,
+                            resourceId: resource.id,
+                        })
+                        .catch((cause) => {
+                            throw new Error(
+                                cause instanceof Error
+                                    ? cause.message
+                                    : `${resource.name} could not be destroyed.`,
+                            );
+                        });
 
             for (const { resource } of losing) {
                 const { id } = await client.resources.deploy({

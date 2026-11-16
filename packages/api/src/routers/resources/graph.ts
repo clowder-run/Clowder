@@ -5,11 +5,13 @@ import {
     projects,
     resources,
     resourceDeploymentInputs,
+    sandboxes,
+    volumes,
 } from "@clowder/db/schema/index";
 import { ucClient } from "@clowder/uncloud";
 import { composeSystemVariables } from "@clowder/workflows/compose";
 import { referenceTargets, referenceKeys } from "@clowder/workflows/references";
-import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ne, or, sql } from "drizzle-orm";
 import * as v from "valibot";
 
 import { organizationProcedure, resourceReadMiddleware } from "../..";
@@ -18,7 +20,7 @@ import { templates } from "../../templates";
 import { assertProjectVisible } from "./access";
 import { getBoundGitRepository } from "../connections";
 import { readComposeConfigFiles } from "../../resources/deployment";
-import { buildProjectGraph } from "../../project-graph";
+import { buildProjectGraph, volumeGraph } from "../../project-graph";
 
 export const resourceGraphRouter = {
     // Services and same-project references for the project canvas; status comes from
@@ -117,7 +119,22 @@ export const resourceGraphRouter = {
                 .where(eq(resources.projectId, input.projectId))
                 .orderBy(asc(resources.createdAt));
 
-            return buildProjectGraph(
+            // Sandboxes and volume cards have no Compose; their volume rows say what to draw.
+            const disks = await db
+                .select({
+                    resourceId: resources.id,
+                    volume: volumes.name,
+                    sandbox: { slug: sandboxes.slug, image: sandboxes.image },
+                })
+                .from(resources)
+                .leftJoin(sandboxes, eq(sandboxes.resourceId, resources.id))
+                .innerJoin(
+                    volumes,
+                    or(eq(volumes.id, sandboxes.volumeId), eq(volumes.resourceId, resources.id)),
+                )
+                .where(eq(resources.projectId, input.projectId));
+
+            const graph = buildProjectGraph(
                 rows.map(
                     ({
                         deployedEnv,
@@ -149,6 +166,15 @@ export const resourceGraphRouter = {
                 templates,
                 domain,
             );
+
+            return {
+                ...graph,
+                resources: graph.resources.map((entry) => {
+                    const disk = disks.find((row) => row.resourceId === entry.id);
+
+                    return disk ? { ...entry, ...volumeGraph(disk.volume, disk.sandbox) } : entry;
+                }),
+            };
         }),
 
     // Railway's "Details" on staged changes: what is live next to what the next deploy ships.

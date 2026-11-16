@@ -27,6 +27,11 @@
 
     const cluster = getCanvasCluster();
 
+    // Buckets and sandboxes report their own job's state rather than a deployment's.
+    const jobStatus = $derived(
+        resource.bucketStatus ?? resource.sandboxStatus,
+    );
+
     // A finished deploy only says the rollout worked; the containers say whether it still runs.
     // Every card reads one project-wide query, so the canvas polls the sidecar once.
     const containersQuery = createQuery(() =>
@@ -38,7 +43,7 @@
             enabled:
                 cluster.id.length > 0 &&
                 status === "ready" &&
-                !resource.bucketStatus,
+                !jobStatus,
             refetchInterval: 30_000,
         }),
     );
@@ -105,8 +110,19 @@
         return sources[source] ? ` via ${sources[source]}` : "";
     });
 
+    // A sandbox is a running VM, so it reads like a service; a bucket keeps its plain job text.
+    const sandboxStates = {
+        running: "online",
+        provisioning: "provisioning",
+        destroying: "destroying",
+        failed: "failed",
+    } as const;
+
     const cardState = $derived.by(() => {
-        if (resource.bucketStatus) return "bucket";
+        if (resource.sandboxStatus)
+            return sandboxStates[resource.sandboxStatus];
+
+        if (jobStatus) return "job";
 
         if (!status) return "offline";
 
@@ -129,18 +145,18 @@
     });
 </script>
 
-{#if cardState === "bucket"}
+{#if cardState === "job"}
     <!-- Railway's bucket card: plain grey text, with a braille spinner while a job runs. -->
     <p
         class="flex items-center gap-2 truncate text-sm text-muted-foreground capitalize"
     >
-        {#if resource.bucketStatus === "provisioning" || resource.bucketStatus === "deleting"}
+        {#if jobStatus === "provisioning" || jobStatus === "deleting" || jobStatus === "destroying"}
             <span
                 class="spinner w-3 shrink-0"
                 aria-hidden="true"
             ></span>
         {/if}
-        {resource.bucketStatus}
+        {jobStatus}
     </p>
 {:else if cardState === "offline"}
     <p class="truncate text-sm text-muted-foreground">
@@ -178,13 +194,19 @@
             <span class="truncate text-muted-foreground">
                 Just deployed{via}
             </span>
-        {:else if cardState === "deploying"}
+        {:else if cardState === "deploying" || cardState === "provisioning" || cardState === "destroying"}
             <LoaderCircle
                 class="size-4 animate-spin text-warning-foreground motion-reduce:animate-none"
                 aria-hidden="true"
             />
             <span class="truncate text-warning-foreground">
-                {status === "queued" ? "Queued" : "Deploying"}
+                {cardState === "provisioning"
+                    ? "Provisioning"
+                    : cardState === "destroying"
+                      ? "Destroying"
+                      : status === "queued"
+                        ? "Queued"
+                        : "Deploying"}
             </span>
         {:else}
             <CircleX

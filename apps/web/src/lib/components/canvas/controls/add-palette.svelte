@@ -267,7 +267,7 @@
                 current === "database",
             );
 
-        return rootEntries(volumeTargets.length > 0);
+        return rootEntries(projectId, volumeTargets.length > 0);
     });
 
     const s3Connections = $derived(s3ConnectionsQuery.data ?? []);

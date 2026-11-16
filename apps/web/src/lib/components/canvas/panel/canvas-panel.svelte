@@ -10,6 +10,7 @@
     import Box from "phosphor-svelte/lib/CubeIcon";
     import X from "phosphor-svelte/lib/XIcon";
     import {
+        parseAsBoolean,
         parseAsString,
         parseAsStringLiteral,
         useQueryState,
@@ -19,6 +20,7 @@
     import { fly } from "svelte/transition";
     import type { CanvasResource, CanvasService } from "../graph";
     import CanvasCompose from "./canvas-compose.svelte";
+    import CanvasSandboxCompose from "./canvas-sandbox-compose.svelte";
     import DatabaseConfig from "./database/database-config.svelte";
     import DatabaseData from "./database/database-data.svelte";
     import DatabaseStats from "./database/database-stats.svelte";
@@ -92,16 +94,27 @@
         resourceId: resource.id,
     });
 
-    // Buckets have no deployments, containers or logs of their own; only buckets hold files.
+    // Not linked anywhere: `?showcompose=true` reveals the Compose a sandbox deploys.
+    const showCompose = useQueryState(
+        "showcompose",
+        parseAsBoolean.withDefault(false),
+    );
+
+    // Buckets have no deployments, containers or logs of their own; only buckets hold files. A
+    // sandbox's deployments are its provisioning and destroy attempts.
     const visibleTabs = $derived(
         isBucket
             ? (["files", "variables", "settings"] as const)
-            : tabs.filter(
-                  (name) =>
-                      name !== "files" &&
-                      ((name !== "tables" && name !== "config") ||
-                          isPostgres),
-              ),
+            : resource.type === "sandbox"
+              ? showCompose.current
+                  ? (["deployments", "compose", "settings"] as const)
+                  : (["deployments", "settings"] as const)
+              : tabs.filter(
+                    (name) =>
+                        name !== "files" &&
+                        ((name !== "tables" && name !== "config") ||
+                            isPostgres),
+                ),
     );
 
     // Matches project-canvas, so Back steps through tabs and stacked logs.
@@ -293,6 +306,8 @@
                 <CanvasBucketVariables {resource} />
             {:else if active === "variables"}
                 <CanvasVariables {resource} />
+            {:else if active === "compose" && resource.type === "sandbox"}
+                <CanvasSandboxCompose {resource} />
             {:else if active === "compose"}
                 <CanvasCompose {resource} />
             {:else if active === "metrics"}

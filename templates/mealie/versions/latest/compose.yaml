@@ -1,6 +1,6 @@
 services:
     mealie:
-        image: ghcr.io/mealie-recipes/mealie:v3.30.0
+        image: ghcr.io/mealie-recipes/mealie:latest
         restart: unless-stopped
         x-ports:
             - "${MEALIE_HOST}:9000/https"

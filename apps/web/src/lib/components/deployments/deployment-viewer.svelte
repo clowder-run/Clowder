@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { downloadText } from "$lib/utils";
     import { goto } from "$app/navigation";
     import AddMachineActions from "$lib/components/clusters/add-machine-actions.svelte";
     import ProvisionActions from "$lib/components/clusters/provision-actions.svelte";
@@ -115,6 +116,8 @@
         ["DeployCaddy", "Caddy deployment"],
         ["ProvisionCluster", "Cluster creation"],
         ["AddMachine", "New machine"],
+        ["ProvisionSandbox", "New sandbox"],
+        ["DestroySandbox", "Sandbox removal"],
     ]);
 
     const title = $derived(
@@ -190,17 +193,10 @@
     }
 
     function downloadLogs() {
-        const url = URL.createObjectURL(
-            new Blob([logsAsText(visibleLogs) + "\n"], {
-                type: "text/plain",
-            }),
+        downloadText(
+            `deployment-${deploymentId}.log`,
+            logsAsText(visibleLogs) + "\n",
         );
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `deployment-${deploymentId}.log`;
-        link.click();
-        URL.revokeObjectURL(url);
     }
 
     const cancelMutationState = createMutation(() =>

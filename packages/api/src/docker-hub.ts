@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { DOCKER_HUB, DOCKER_HUB_ALIASES, parseImageReference } from "./image-reference";
 
 const HUB = "https://hub.docker.com";
 
@@ -39,27 +40,13 @@ export type DockerHubImage = {
  * `postgres:18` is `library/postgres`; `ghcr.io/org/app` is `null`.
  */
 export function dockerHubRepository(image: string) {
-    const path = image
-        .trim()
-        .toLowerCase()
-        .split("@")[0]
-        ?.replace(/:[^/]*$/u, "");
+    const reference = parseImageReference(image.trim().toLowerCase());
 
-    const segments = path ? path.split("/") : [];
-    const [first] = segments;
-
-    if (!first) return null;
-
-    // A first segment with a dot or port, or `localhost`, names a registry.
-    const registry = first.includes(".") || first.includes(":") || first === "localhost";
-    const hub = ["docker.io", "index.docker.io", "registry-1.docker.io"].includes(first);
-    const repository = hub ? segments.slice(1) : segments;
-
-    if ((registry && !hub) || repository.length === 0 || repository.some((part) => !part)) {
+    // A bare `docker.io` names the registry, not an image in it.
+    if (!reference || reference.registry !== DOCKER_HUB || DOCKER_HUB_ALIASES.has(reference.name))
         return null;
-    }
 
-    return repository.length === 1 ? `library/${repository[0]}` : repository.join("/");
+    return reference.repository;
 }
 
 /** The Docker Hub logo URL for a `namespace/name` repository. */

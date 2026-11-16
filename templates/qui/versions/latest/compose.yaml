@@ -1,6 +1,6 @@
 services:
     qui:
-        image: ghcr.io/autobrr/qui:v1.35.0
+        image: ghcr.io/autobrr/qui:latest
         volumes:
             - qui_data:/config
         restart: unless-stopped

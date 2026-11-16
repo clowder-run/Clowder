@@ -1,6 +1,6 @@
 services:
     drizzle-gateway:
-        image: ghcr.io/drizzle-team/gateway:1.7.0
+        image: ghcr.io/drizzle-team/gateway:latest
         restart: unless-stopped
         x-ports:
             - ${DRIZZLE_GATEWAY_HOST}:4983/https

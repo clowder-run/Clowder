@@ -1,6 +1,6 @@
 services:
     grafana:
-        image: grafana/grafana:13.2.5
+        image: grafana/grafana:latest
         restart: unless-stopped
         environment:
             GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}

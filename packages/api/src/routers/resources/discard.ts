@@ -61,8 +61,10 @@ export const resourceDiscardRouter = {
                 if (rows.length !== new Set(input.resourceIds).size)
                     throw new ORPCError("NOT_FOUND", { message: "Resource not found." });
 
-                // A bucket is never deployed, so its only staged change is a deletion.
-                const buckets = rows.filter((row) => row.type === "bucket");
+                // A bucket or sandbox is never deployed from a draft, so its only staged change is a deletion.
+                const buckets = rows.filter(
+                    (row) => row.type === "bucket" || row.type === "sandbox",
+                );
 
                 if (buckets.length)
                     await tx

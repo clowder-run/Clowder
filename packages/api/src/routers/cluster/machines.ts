@@ -4,7 +4,7 @@ import { forgetJoinedMachine, latestMachineAttempt } from "@clowder/db/clusters"
 import { clusters, deployments } from "@clowder/db/schema/index";
 import { UcApiError, unwrap } from "@clowder/uncloud";
 import { addMachineLock } from "@clowder/workflows/add-machine";
-import { sshKeyPair } from "@clowder/workflows/ssh-setup";
+import { sshKeyPair } from "@clowder/workflows/ssh-key";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import * as v from "valibot";
@@ -122,7 +122,7 @@ export const machinesRouter = {
                     });
 
                 // The comment tells the user which authorized key to remove later.
-                const key = sshKeyPair(`clowder-${cluster.id.slice(0, 8)}`);
+                const key = await sshKeyPair(`clowder-${cluster.id.slice(0, 8)}`);
 
                 await tx
                     .update(clusters)
