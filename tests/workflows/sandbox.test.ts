@@ -302,6 +302,36 @@ describe("sandbox deployments", () => {
         expect(card).toMatchObject({ type: "volume", name: volume!.name, projectId });
     });
 
+    it("keeps the name until a running deploy stops, and cancels a queued one", async () => {
+        const { id, deploymentId } = await insertSandbox("DestroySandbox", "hazel");
+
+        const running = await queueSandboxDeployment(db, id, clusterId, "ProvisionSandbox");
+
+        const queued = await queueSandboxDeployment(db, id, clusterId, "ProvisionSandbox");
+
+        await db.update(deployments).set({ status: "running" }).where(eq(deployments.id, running));
+
+        const destroyed = destroySandbox(db, deploymentId, signal);
+
+        // Past the first check, the destroy is waiting: nothing removed, the name still held.
+        await vi.waitFor(async () =>
+            expect((await load(id, deploymentId)).logs.at(-1)?.text).toBe(
+                "Waiting for the running deploy to stop.",
+            ),
+        );
+        expect(removed).toEqual([]);
+        expect(await db.select().from(sandboxes).where(eq(sandboxes.resourceId, id))).toHaveLength(
+            1,
+        );
+        expect((await load(id, queued)).deployment.status).toBe("cancelled");
+
+        await db.update(deployments).set({ status: "ready" }).where(eq(deployments.id, running));
+        await destroyed;
+
+        expect(removed).toEqual([`sandbox-s-${id.slice(0, 8)}`]);
+        expect(await db.select().from(sandboxes).where(eq(sandboxes.resourceId, id))).toEqual([]);
+    });
+
     it("removes the VM again when the sandbox is destroyed mid-deploy", async () => {
         const { id, deploymentId } = await insertSandbox("ProvisionSandbox", null);
 

@@ -5,6 +5,7 @@ import {
     deleteSandboxResource,
     markSandboxFailed,
     markSandboxRunning,
+    provisioningRunning,
     SANDBOX_DATA,
     sandboxServiceName,
     setSandboxVolumeMachine,
@@ -12,8 +13,12 @@ import {
     type SandboxRow,
 } from "@clowder/db/sandboxes";
 import { ucClient, UcApiError, unwrap, type UcClient } from "@clowder/uncloud";
+import { setTimeout as sleep } from "node:timers/promises";
 import { stringify } from "yaml";
 import { deployCompose } from "./deploy-compose";
+
+// How often a destroy checks whether the deploy it waits for has stopped.
+const PROVISIONING_POLL_MS = 2000;
 
 type Work = NonNullable<Awaited<ReturnType<typeof getSandboxWork>>>;
 
@@ -202,6 +207,15 @@ export function provisionSandbox(db: Database, deploymentId: string, signal: Abo
 export function destroySandbox(db: Database, deploymentId: string, signal: AbortSignal) {
     return runAttempt(db, deploymentId, "DestroySandbox", signal, async ({ sandbox }, uc, log) => {
         const service = sandboxServiceName(sandbox.slug);
+
+        // A deploy still running could create the VM after this removes it, or, once the name is
+        // free, remove a new sandbox that took it. Its own timeout bounds the wait.
+        if (await provisioningRunning(db, sandbox.resourceId)) {
+            await log("Waiting for the running deploy to stop.");
+
+            while (await provisioningRunning(db, sandbox.resourceId))
+                await sleep(PROVISIONING_POLL_MS, undefined, { signal });
+        }
 
         await log(`Removing ${service}.`);
         await removeService(uc, service, signal);
