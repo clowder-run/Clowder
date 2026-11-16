@@ -87,30 +87,6 @@ export function markSandboxFailed(db: Database, resourceId: string, name: Sandbo
 }
 
 /**
- * Whether a ProvisionSandbox attempt is still deploying the sandbox. A queued one is cancelled
- * instead, so it never starts; its claim and this update can't both win.
- */
-export async function provisioningRunning(db: Database, resourceId: string) {
-    const active = and(
-        eq(deployments.resourceId, resourceId),
-        eq(deployments.name, "ProvisionSandbox" satisfies SandboxDeploymentName),
-    );
-
-    await db
-        .update(deployments)
-        .set({ status: "cancelled", error: "The sandbox was destroyed.", finishedAt: new Date() })
-        .where(and(active, eq(deployments.status, "queued")));
-
-    const [running] = await db
-        .select({ id: deployments.id })
-        .from(deployments)
-        .where(and(active, eq(deployments.status, "running")))
-        .limit(1);
-
-    return Boolean(running);
-}
-
-/**
  * Removes a destroyed sandbox from its project, like a deleted bucket. Its volume stays on the
  * machines and takes its place on the canvas, until it's reused or deleted.
  */

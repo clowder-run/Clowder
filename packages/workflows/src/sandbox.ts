@@ -5,7 +5,6 @@ import {
     deleteSandboxResource,
     markSandboxFailed,
     markSandboxRunning,
-    provisioningRunning,
     SANDBOX_DATA,
     sandboxServiceName,
     setSandboxVolumeMachine,
@@ -17,8 +16,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { stringify } from "yaml";
 import { deployCompose } from "./deploy-compose";
 
-// How often a destroy checks whether the deploy it waits for has stopped.
-const PROVISIONING_POLL_MS = 2000;
+/** The advisory lock an attempt holds while it runs, so a sandbox has one at a time. */
+export function sandboxLock(resourceId: string) {
+    return `clowder:sandbox:${resourceId}`;
+}
+
+// How often a destroy checks whether the attempt it waits for has stopped.
+const LOCK_POLL_MS = 2000;
 
 type Work = NonNullable<Awaited<ReturnType<typeof getSandboxWork>>>;
 
@@ -109,7 +113,36 @@ async function runAttempt(
     const log = (text: string, level: "info" | "debug" | "error" = "info", event?: string) =>
         appendDeploymentLog(db, deploymentId, text, { level, event }).catch(() => {});
 
+    const lock = await db.$client.connect();
+    let acquired = false;
+
+    const tryLock = async () => {
+        const result = await lock.query<{ acquired: boolean }>(
+            "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+            [sandboxLock(resourceId)],
+        );
+
+        acquired = result.rows[0]?.acquired === true;
+    };
+
     try {
+        await tryLock();
+
+        // A cancelled deploy keeps going until its worker's next heartbeat. A destroy waits it
+        // out: it could create the VM after the removal, or, once the name is free, remove a
+        // new sandbox that took it. Its own timeout bounds the wait.
+        if (!acquired && name === "DestroySandbox") {
+            await log("Waiting for the running deploy to stop.");
+
+            while (!acquired) {
+                await sleep(LOCK_POLL_MS, undefined, { signal });
+                await tryLock();
+            }
+        }
+
+        if (!acquired)
+            throw new Error("An earlier attempt is still stopping. Retry in a few seconds.");
+
         const found = await getSandboxWork(db, resourceId);
 
         if (!found) throw new Error("The sandbox no longer exists.");
@@ -132,6 +165,16 @@ async function runAttempt(
         await markSandboxFailed(db, resourceId, name);
 
         throw new Error(message);
+    } finally {
+        // Released last, so a waiting destroy only starts after this attempt's final writes.
+        try {
+            if (acquired)
+                await lock.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [
+                    sandboxLock(resourceId),
+                ]);
+        } finally {
+            lock.release();
+        }
     }
 }
 
@@ -207,15 +250,6 @@ export function provisionSandbox(db: Database, deploymentId: string, signal: Abo
 export function destroySandbox(db: Database, deploymentId: string, signal: AbortSignal) {
     return runAttempt(db, deploymentId, "DestroySandbox", signal, async ({ sandbox }, uc, log) => {
         const service = sandboxServiceName(sandbox.slug);
-
-        // A deploy still running could create the VM after this removes it, or, once the name is
-        // free, remove a new sandbox that took it. Its own timeout bounds the wait.
-        if (await provisioningRunning(db, sandbox.resourceId)) {
-            await log("Waiting for the running deploy to stop.");
-
-            while (await provisioningRunning(db, sandbox.resourceId))
-                await sleep(PROVISIONING_POLL_MS, undefined, { signal });
-        }
 
         await log(`Removing ${service}.`);
         await removeService(uc, service, signal);

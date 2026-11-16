@@ -15,7 +15,7 @@ import {
     sandboxes,
     volumes,
 } from "@clowder/db/schema/index";
-import { destroySandbox, provisionSandbox } from "@clowder/workflows/sandbox";
+import { destroySandbox, provisionSandbox, sandboxLock } from "@clowder/workflows/sandbox";
 import { call } from "@orpc/server";
 import { asc, eq, inArray } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -302,18 +302,16 @@ describe("sandbox deployments", () => {
         expect(card).toMatchObject({ type: "volume", name: volume!.name, projectId });
     });
 
-    it("keeps the name until a running deploy stops, and cancels a queued one", async () => {
+    it("keeps the name until an attempt still stopping, even a cancelled one, lets go", async () => {
         const { id, deploymentId } = await insertSandbox("DestroySandbox", "hazel");
 
-        const running = await queueSandboxDeployment(db, id, clusterId, "ProvisionSandbox");
+        // A cancelled deploy whose worker hasn't noticed yet still holds its sandbox's lock.
+        const stopping = await db.$client.connect();
 
-        const queued = await queueSandboxDeployment(db, id, clusterId, "ProvisionSandbox");
-
-        await db.update(deployments).set({ status: "running" }).where(eq(deployments.id, running));
+        await stopping.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [sandboxLock(id)]);
 
         const destroyed = destroySandbox(db, deploymentId, signal);
 
-        // Past the first check, the destroy is waiting: nothing removed, the name still held.
         await vi.waitFor(async () =>
             expect((await load(id, deploymentId)).logs.at(-1)?.text).toBe(
                 "Waiting for the running deploy to stop.",
@@ -323,13 +321,33 @@ describe("sandbox deployments", () => {
         expect(await db.select().from(sandboxes).where(eq(sandboxes.resourceId, id))).toHaveLength(
             1,
         );
-        expect((await load(id, queued)).deployment.status).toBe("cancelled");
 
-        await db.update(deployments).set({ status: "ready" }).where(eq(deployments.id, running));
+        // A pooled connection keeps its session lock after release, so it's unlocked first.
+        await stopping.query("SELECT pg_advisory_unlock_all()");
+        stopping.release();
         await destroyed;
 
         expect(removed).toEqual([`sandbox-s-${id.slice(0, 8)}`]);
         expect(await db.select().from(sandboxes).where(eq(sandboxes.resourceId, id))).toEqual([]);
+    });
+
+    it("refuses a deploy while an earlier attempt still holds the sandbox", async () => {
+        const { id, deploymentId } = await insertSandbox("ProvisionSandbox", null);
+
+        const stopping = await db.$client.connect();
+
+        try {
+            await stopping.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
+                sandboxLock(id),
+            ]);
+            await expect(provisionSandbox(db, deploymentId, signal)).rejects.toThrow(
+                "An earlier attempt is still stopping.",
+            );
+            expect(deployed).toEqual([]);
+        } finally {
+            await stopping.query("SELECT pg_advisory_unlock_all()");
+            stopping.release();
+        }
     });
 
     it("removes the VM again when the sandbox is destroyed mid-deploy", async () => {
