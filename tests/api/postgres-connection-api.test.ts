@@ -201,6 +201,21 @@ describe("external connection API", () => {
         );
     });
 
+    it("uses the password Compose environment sets from a Variable", async () => {
+        const input = await resource(
+            `${draft}    environment:\n      POSTGRES_PASSWORD: \${DB_PASSWORD}\n`,
+        );
+
+        await db
+            .update(resources)
+            .set({ settings: { engine: "postgresql", env: "DB_PASSWORD=secret\n" } })
+            .where(eq(resources.id, input.resourceId));
+
+        expect((await call(resourcesRouter.getConnection, input, { context }))?.internal).toContain(
+            "postgres:secret@",
+        );
+    });
+
     it("only warns about an external port that has not been deployed", async () => {
         const internalOnly = await resource();
         expect(await call(resourcesRouter.getConnection, internalOnly, { context })).toMatchObject({

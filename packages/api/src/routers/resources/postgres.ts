@@ -9,6 +9,7 @@ import {
 import { resourceSlug } from "@clowder/db/slug";
 import { unwrap, type UcClient } from "@clowder/uncloud";
 import {
+    composeServiceVariables,
     composeVariables,
     prefixName,
     resourceComposePrefix,
@@ -111,7 +112,7 @@ const postgresInput = v.object({
     resourceId: v.pipe(v.string(), v.uuid()),
 });
 
-/** The resource's Variables resolved like a deploy, so referenced and interpolated values are real. */
+/** The variables the container sees: Variables plus Compose `environment`, resolved like a deploy. */
 export async function postgresEnv(
     db: Database,
     clusterId: string,
@@ -131,7 +132,7 @@ export async function postgresEnv(
             .where(eq(projects.id, resource.projectId));
 
         // `CLOWDER_PROJECT_*` / `CLOWDER_RESOURCE_*` resolve like the deploy does.
-        return composeVariables(
+        const args = [
             compose,
             envText,
             resourceComposePrefix(resource),
@@ -143,7 +144,10 @@ export async function postgresEnv(
                 resourceId: resource.id,
                 resourceName: resource.name,
             },
-        );
+        ] as const;
+
+        // Compose `environment` wins over Variables in the container, e.g. `POSTGRES_PASSWORD: ${DB_PASSWORD}`.
+        return { ...composeVariables(...args), ...composeServiceVariables(...args) };
     } catch {
         return parseEnv(envText);
     }
