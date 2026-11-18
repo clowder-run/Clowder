@@ -54,7 +54,10 @@
         parseAsStringLiteral,
         useQueryStates,
     } from "nuqs-svelte";
+    import { useModKey } from "$lib/hooks/use-mod-key.svelte";
     import { onMount } from "svelte";
+
+    const modKey = useModKey();
 
     const sortOptions = [
         { value: "recent", label: "Recent Activity" },
@@ -190,7 +193,7 @@
                 class="hidden sm:flex"
             >
                 <KbdGroup>
-                    <Kbd>Ctrl</Kbd>
+                    <Kbd>{modKey.current}</Kbd>
                     <Kbd>K</Kbd>
                 </KbdGroup>
             </InputGroupAddon>

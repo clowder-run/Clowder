@@ -7,8 +7,11 @@
     } from "$lib/components/ui/sidebar";
     import Search from "phosphor-svelte/lib/MagnifyingGlassIcon";
     import { parseAsBoolean, useQueryState } from "nuqs-svelte";
+    import { useModKey } from "$lib/hooks/use-mod-key.svelte";
 
     let { class: className = "" }: { class?: string } = $props();
+
+    const modKey = useModKey();
 
     const open = useQueryState(
         "palette",
@@ -19,7 +22,7 @@
 <SidebarMenuItem>
     <SidebarMenuButton
         class={className}
-        tooltipContent="Search (Ctrl K)"
+        tooltipContent="Search ({modKey.current} K)"
         onclick={() => void open.set(true)}
     >
         <Search aria-hidden="true" />
@@ -29,7 +32,7 @@
         <KbdGroup
             class="ms-auto group-data-[collapsible=icon]:hidden max-md:hidden"
         >
-            <Kbd>Ctrl</Kbd>
+            <Kbd>{modKey.current}</Kbd>
             <Kbd>K</Kbd>
         </KbdGroup>
     </SidebarMenuButton>
