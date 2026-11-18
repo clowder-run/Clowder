@@ -239,9 +239,12 @@
                 Copy to Project…
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onclick={() => actions.ungroup(id)}>
-                <Ungroup aria-hidden="true" />
-                Remove Group
+            <ContextMenuItem
+                variant="destructive"
+                onclick={() => actions.ungroup(id)}
+            >
+                <Trash2 aria-hidden="true" />
+                Delete group
             </ContextMenuItem>
         {:else if target?.kind === "node" && resourceId}
             {@const card = target}
@@ -259,6 +262,14 @@
                         <Plus aria-hidden="true" />
                         New Group…
                     </ContextMenuItem>
+                    {#if card.groupId}
+                        <ContextMenuItem
+                            onclick={() => actions.setGroup(id, null)}
+                        >
+                            <Ungroup aria-hidden="true" />
+                            Remove from Group
+                        </ContextMenuItem>
+                    {/if}
                     {#if groups.length}
                         <ContextMenuSeparator />
                     {/if}
