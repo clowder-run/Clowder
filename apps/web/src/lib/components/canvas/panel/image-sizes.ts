@@ -1,9 +1,8 @@
 import { imageKey } from "@clowder/api/image-reference";
 import { RangeSetBuilder, StateField, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
-import { mount, unmount } from "svelte";
 import { formatImageSize } from "$lib/format";
-import ImageSizeSkeleton from "./image-size-skeleton.svelte";
+import { createSkeletonBox } from "skullet";
 
 /**
  * A size in bytes, or `"loading"` while it is being looked up. `download` marks a registry's
@@ -35,9 +34,6 @@ export function composeImages(text: string) {
     return Array.from(images, ([key, image]) => ({ key, image }));
 }
 
-// The mounted skeletons, so a widget CodeMirror drops unmounts its own.
-const skeletons = new WeakMap<HTMLElement, ReturnType<typeof mount>>();
-
 class SizeWidget extends WidgetType {
     constructor(readonly size: ImageSize) {
         super();
@@ -53,8 +49,10 @@ class SizeWidget extends WidgetType {
         const element = document.createElement("span");
         element.className = "cm-image-size";
 
+        // The shared <Skeleton> wraps blocks it measures, which breaks a code line; skullet's own
+        // bar is the inline form of it.
         if (this.size === "loading")
-            skeletons.set(element, mount(ImageSizeSkeleton, { target: element }));
+            element.append(createSkeletonBox({ width: "5ch", height: "0.9em", radius: "4px" }));
         else {
             element.textContent = formatImageSize(this.size.bytes);
             element.title = this.size.download
@@ -63,12 +61,6 @@ class SizeWidget extends WidgetType {
         }
 
         return element;
-    }
-
-    override destroy(element: HTMLElement) {
-        const skeleton = skeletons.get(element);
-
-        if (skeleton) void unmount(skeleton);
     }
 }
 
@@ -95,6 +87,7 @@ function sizeDecorations(state: EditorState, sizes: Map<string, ImageSize>) {
 const sizeTheme = EditorView.theme({
     ".cm-image-size": {
         display: "inline-block",
+        verticalAlign: "middle",
         marginLeft: "2ch",
         color: "var(--muted-foreground)",
         fontSize: "12px",
