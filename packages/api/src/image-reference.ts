@@ -43,3 +43,17 @@ export function parseImageReference(image: string): ImageReference | null {
         digest: groups.digest ?? null,
     };
 }
+
+/**
+ * One spelling per image, so `postgres` and `docker.io/library/postgres:latest` match;
+ * `null` when it isn't a reference. A digest wins over the tag beside it.
+ */
+export function imageKey(image: string) {
+    const reference = parseImageReference(image);
+
+    if (!reference) return null;
+
+    const { registry, repository, tag, digest } = reference;
+
+    return digest ? `${registry}/${repository}@${digest}` : `${registry}/${repository}:${tag}`;
+}

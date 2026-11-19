@@ -19,7 +19,9 @@
     import { prefersReducedMotion } from "svelte/motion";
     import { fly } from "svelte/transition";
     import type { CanvasResource, CanvasService } from "../graph";
+    import { queryClient } from "$lib/api/orpc";
     import CanvasCompose from "./canvas-compose.svelte";
+    import { clusterImageSizes } from "./editor-image-sizes.svelte";
     import CanvasSandboxCompose from "./canvas-sandbox-compose.svelte";
     import DatabaseConfig from "./database/database-config.svelte";
     import DatabaseData from "./database/database-data.svelte";
@@ -95,6 +97,15 @@
         clusterId,
         projectId: resource.projectId,
         resourceId: resource.id,
+    });
+
+    // Listing the cluster's images takes seconds, so it starts when the panel opens, not with Compose.
+    $effect(() => {
+        // prefetchQuery ignores `enabled`, so an unknown cluster is skipped here.
+        if (!isBucket && clusterId)
+            void queryClient.prefetchQuery(
+                clusterImageSizes(clusterId, resource.projectId),
+            );
     });
 
     // Not linked anywhere: `?showcompose=true` reveals the Compose a sandbox deploys.
@@ -317,9 +328,9 @@
             {:else if active === "variables"}
                 <CanvasVariables {resource} />
             {:else if active === "compose" && resource.type === "sandbox"}
-                <CanvasSandboxCompose {resource} />
+                <CanvasSandboxCompose {resource} {clusterId} />
             {:else if active === "compose"}
-                <CanvasCompose {resource} />
+                <CanvasCompose {resource} {clusterId} />
             {:else if active === "metrics"}
                 {#if isPostgres}
                     <div class="@container mb-10">

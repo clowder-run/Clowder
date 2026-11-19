@@ -36,6 +36,8 @@ import {
     resourceEnv,
 } from "../../compose";
 import { composeResourceTypes } from "../../databases";
+import { imageKey } from "../../image-reference";
+import { registryImageSize } from "../../registry";
 import { lockedComposeResource, resourceEditInput, resourceGitRouter } from "./git";
 import { resourceDiscardRouter } from "./discard";
 import { resourceMetricsRouter } from "./metrics";
@@ -68,6 +70,13 @@ async function resourceServiceNames(db: Database, resource: Resource) {
 type Resource = typeof resources.$inferSelect;
 
 type DeployedSnapshot = { spec: string | null; prefix: string | null };
+
+// The sidecar passes Docker's image summaries through untyped; these are the fields sizes need.
+const dockerImageSchema = v.object({
+    RepoTags: v.nullish(v.array(v.string())),
+    RepoDigests: v.nullish(v.array(v.string())),
+    Size: v.number(),
+});
 
 /** The latest successful deploy of each resource, which says what actually runs. */
 async function deployedSnapshots(db: Database, resourceIds: string[]) {
@@ -447,6 +456,50 @@ export const resourcesRouter = {
 
             return containers.flat();
         }),
+
+    // What `uc images` reports for the cluster, keyed by `imageKey`; images not pulled yet are missing.
+    getImageSizes: organizationProcedure
+        .input(
+            v.object({
+                clusterId: v.pipe(v.string(), v.uuid()),
+                projectId: v.pipe(v.string(), v.uuid()),
+            }),
+        )
+        .use(uncloudMiddleware)
+        .handler(async ({ context: { db, organizationId, uc }, input }) => {
+            const project = await assertProjectVisible(db, organizationId, input.projectId);
+
+            if (project.clusterId !== input.clusterId)
+                throw new ORPCError("NOT_FOUND", { message: "Project not found." });
+
+            const { items } = await unwrap(
+                uc.GET("/api/v1/images", { signal: AbortSignal.timeout(10_000) }),
+            );
+
+            const sizes: Record<string, number> = {};
+
+            for (const image of items.flatMap((machine) => machine.images)) {
+                const parsed = v.safeParse(dockerImageSchema, image);
+
+                if (!parsed.success) continue;
+                const { RepoTags, RepoDigests, Size } = parsed.output;
+
+                for (const reference of [...(RepoTags ?? []), ...(RepoDigests ?? [])]) {
+                    const key = imageKey(reference);
+
+                    // Machines report one image differently (a partial unpack is smaller), so keep the largest.
+                    if (key) sizes[key] = Math.max(sizes[key] ?? 0, Size);
+                }
+            }
+
+            return sizes;
+        }),
+
+    // For images the cluster hasn't pulled yet: the download size their registry reports, or `null`
+    // for a private or missing image, which is an expected answer rather than a failure.
+    getRegistryImageSize: organizationProcedure
+        .input(v.object({ image: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(512)) }))
+        .handler(({ input }) => registryImageSize(input.image).catch(() => null)),
 
     // Containers of every resource in a project from one sidecar call, so the canvas polls once
     // instead of once per card. Keyed by resource id; a resource that does not parse has none.

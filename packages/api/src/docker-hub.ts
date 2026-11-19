@@ -1,5 +1,10 @@
 import * as v from "valibot";
-import { DOCKER_HUB, DOCKER_HUB_ALIASES, parseImageReference } from "./image-reference";
+import {
+    DOCKER_HUB,
+    DOCKER_HUB_ALIASES,
+    parseImageReference,
+    type ImageReference,
+} from "./image-reference";
 
 const HUB = "https://hub.docker.com";
 
@@ -110,4 +115,36 @@ export async function fetchDockerHubLogo(image: string) {
     } catch {
         return null;
     }
+}
+
+const tagSchema = v.object({
+    full_size: v.nullish(v.number()),
+    images: v.array(v.object({ os: v.string(), architecture: v.string(), size: v.number() })),
+});
+
+/** A Docker Hub tag's compressed linux/amd64 size; a digest-pinned reference uses its tag. */
+export async function dockerHubImageSize(reference: ImageReference) {
+    const url = new URL(
+        `/v2/repositories/${reference.repository}/tags/${encodeURIComponent(reference.tag)}`,
+        HUB,
+    );
+
+    const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(TIMEOUT) });
+
+    if (response.status === 404)
+        throw new Error(`${reference.name}:${reference.tag} was not found on Docker Hub.`);
+
+    if (!response.ok) throw new Error(`Docker Hub answered ${response.status}.`);
+
+    const tag = v.parse(tagSchema, await response.json());
+
+    const image = tag.images.find(
+        ({ os, architecture }) => os === "linux" && architecture === "amd64",
+    );
+
+    const size = image?.size ?? tag.full_size;
+
+    if (size == null) throw new Error(`Docker Hub has no size for ${reference.name}.`);
+
+    return size;
 }

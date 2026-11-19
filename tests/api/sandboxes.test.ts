@@ -8,7 +8,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import type { Context } from "../../packages/api/src/context";
-import { pinImageDigest, tokenUrl } from "../../packages/api/src/registry";
+import { pinImageDigest, platformDigest, tokenUrl } from "../../packages/api/src/registry";
 import { sandboxesRouter } from "../../packages/api/src/routers/sandboxes";
 import { volumesRouter } from "../../packages/api/src/routers/volumes";
 import { clusterRouter } from "../../packages/api/src/routers/cluster";
@@ -23,6 +23,27 @@ const IMAGE = `pkg.bar/sandbox:latest@${DIGEST}`;
 describe("registry", () => {
     it("keeps an image that already names a digest", async () => {
         await expect(pinImageDigest(IMAGE)).resolves.toBe(IMAGE);
+    });
+
+    it("sizes the linux/amd64 image of an index, skipping attestations", () => {
+        const amd64 = `sha256:${"b".repeat(64)}`;
+
+        expect(
+            platformDigest({
+                manifests: [
+                    {
+                        digest: `sha256:${"c".repeat(64)}`,
+                        platform: { os: "linux", architecture: "arm64" },
+                    },
+                    {
+                        digest: `sha256:${"d".repeat(64)}`,
+                        platform: { os: "unknown", architecture: "unknown" },
+                    },
+                    { digest: amd64, platform: { os: "linux", architecture: "amd64" } },
+                ],
+            }),
+        ).toBe(amd64);
+        expect(platformDigest({ manifests: [{ digest: "../../etc" }] })).toBeNull();
     });
 
     it("asks a Bearer challenge's realm for an anonymous token", () => {
