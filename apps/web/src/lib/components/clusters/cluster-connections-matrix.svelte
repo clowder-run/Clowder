@@ -41,11 +41,20 @@
         return [...unique].map(([id, name]) => ({ id, name }));
     });
 
-    const linksByPath = $derived(
-        new Map(
-            links.map((link) => [`${link.from} ${link.to}`, link]),
-        ),
-    );
+    // A path measured more than once shows its slowest median, so a slow sample is never hidden.
+    const linksByPath = $derived.by(() => {
+        const paths = new Map<string, Link>();
+
+        for (const link of links) {
+            const path = `${link.from} ${link.to}`;
+            const seen = paths.get(path);
+
+            if (!seen || link.medianMs > seen.medianMs)
+                paths.set(path, link);
+        }
+
+        return paths;
+    });
 
     // Paths this slow usually cross regions; worth a glance, not an alarm.
     const slowMs = 100;
@@ -108,9 +117,12 @@
                             {:else}
                                 <span
                                     class="text-muted-foreground/50"
-                                    aria-label="Not measured"
+                                    aria-hidden="true"
                                 >
                                     —
+                                </span>
+                                <span class="sr-only">
+                                    Not measured
                                 </span>
                             {/if}
                         </TableCell>

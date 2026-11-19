@@ -241,7 +241,7 @@
             <ContextMenuSeparator />
             <ContextMenuItem
                 variant="destructive"
-                onclick={() => actions.ungroup(id)}
+                onclick={() => actions.edit("delete-group", id)}
             >
                 <Trash2 aria-hidden="true" />
                 Delete group

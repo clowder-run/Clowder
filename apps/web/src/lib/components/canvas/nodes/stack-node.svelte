@@ -143,7 +143,7 @@
                 <MenuSeparator />
                 <MenuItem
                     variant="destructive"
-                    onclick={() => actions.ungroup(id)}
+                    onclick={() => actions.edit("delete-group", id)}
                 >
                     <Trash aria-hidden="true" />
                     Delete group

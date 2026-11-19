@@ -403,6 +403,45 @@ describe("variable references API (PostgreSQL)", () => {
                 `postgresql://shop:${canary}@db-k3f9x2-postgres.internal:5432/shop`,
             );
         });
+
+        it("reads only the database service, even when another service can't interpolate", async () => {
+            const databaseId = randomUUID();
+            await db.insert(resources).values({
+                id: databaseId,
+                projectId,
+                name: "db",
+                slug: "db-p7d2m4",
+                type: "database",
+                settings: {
+                    engine: "postgresql",
+                    env: `POSTGRES_USER=${ref(postgresId, "POSTGRES_USER")}\nPOSTGRES_PASSWORD=${ref(postgresId, "POSTGRES_PASSWORD")}\n`,
+                },
+                draftSpec: [
+                    "services:",
+                    "  pgbouncer:",
+                    "    image: pgbouncer",
+                    "    environment:",
+                    "      POSTGRES_USER: app",
+                    "      POSTGRES_PASSWORD: other",
+                    `      BROKEN: "${ref(postgresId, "POSTGRES_USER")}"`,
+                    "  postgres:",
+                    "    image: postgres:18",
+                    "    x-clowder:",
+                    "      engine: postgresql",
+                    "",
+                ].join("\n"),
+            });
+
+            const connection = await call(
+                resourcesRouter.getConnection,
+                { clusterId, projectId, resourceId: databaseId },
+                { context },
+            );
+
+            expect(connection?.internal).toBe(
+                `postgresql://shop:${canary}@db-p7d2m4-postgres.internal:5432/shop`,
+            );
+        });
     });
 
     describe("createResource from a template with companions", () => {

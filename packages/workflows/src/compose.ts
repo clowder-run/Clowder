@@ -836,7 +836,7 @@ export function assertNoComposeReference(compose: string) {
 
 /**
  * What services set in Compose `environment`, interpolated like a deploy. When two services
- * set the same key, the first service in the file wins.
+ * set the same key, the first service in the file wins. `only` limits it to one service.
  */
 export function composeServiceVariables(
     compose: string,
@@ -845,6 +845,7 @@ export function composeServiceVariables(
     domain?: string,
     references?: VariableReferences,
     identity?: ResourceIdentity,
+    only?: string,
 ) {
     const doc = YAML.parseDocument(
         interpolateCompose(compose, envText, prefix, domain, references, identity),
@@ -855,8 +856,10 @@ export function composeServiceVariables(
 
     if (!isMap(services)) return variables;
 
-    for (const { value: service } of services.items) {
+    for (const { key, value: service } of services.items) {
         if (!isMap(service)) continue;
+
+        if (only !== undefined && String(isScalar(key) ? key.value : key) !== only) continue;
 
         const environment = resolvedNode(doc, mergedEntries(doc, service).get("environment"));
         let entries: [string, string][] = [];
