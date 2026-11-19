@@ -133,6 +133,9 @@
 
         if (status === "failed") return "failed";
 
+        // Deployed, but the cluster has no containers for it, e.g. its service was removed by hand.
+        if (containers?.length === 0) return "offline";
+
         if (stopped) return "stopped";
 
         if (unhealthy) return "unhealthy";

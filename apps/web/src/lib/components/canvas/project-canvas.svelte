@@ -347,6 +347,9 @@
                 }),
             )?.[resourceId];
 
+            // No containers means no service to start or stop; the sidecar would 404 on either.
+            if (containers?.length === 0) return undefined;
+
             return containers && allExited(containers)
                 ? "stopped"
                 : "running";
