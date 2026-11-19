@@ -119,10 +119,11 @@ export async function fetchDockerHubLogo(image: string) {
 
 const tagSchema = v.object({
     full_size: v.nullish(v.number()),
+    digest: v.nullish(v.string()),
     images: v.array(v.object({ os: v.string(), architecture: v.string(), size: v.number() })),
 });
 
-/** A Docker Hub tag's compressed linux/amd64 size; a digest-pinned reference uses its tag. */
+/** A Docker Hub tag's compressed linux/amd64 size; a pinned digest must still be the tag's. */
 export async function dockerHubImageSize(reference: ImageReference) {
     const url = new URL(
         `/v2/repositories/${reference.repository}/tags/${encodeURIComponent(reference.tag)}`,
@@ -137,6 +138,12 @@ export async function dockerHubImageSize(reference: ImageReference) {
     if (!response.ok) throw new Error(`Docker Hub answered ${response.status}.`);
 
     const tag = v.parse(tagSchema, await response.json());
+
+    // The API only answers by tag, so a digest the tag has moved on from has no size here.
+    if (reference.digest && tag.digest !== reference.digest)
+        throw new Error(
+            `${reference.name}@${reference.digest} is no longer ${reference.tag} on Docker Hub.`,
+        );
 
     const image = tag.images.find(
         ({ os, architecture }) => os === "linux" && architecture === "amd64",

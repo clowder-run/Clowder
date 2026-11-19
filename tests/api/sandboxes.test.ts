@@ -43,7 +43,20 @@ describe("registry", () => {
                 ],
             }),
         ).toBe(amd64);
-        expect(platformDigest({ manifests: [{ digest: "../../etc" }] })).toBeNull();
+        expect(
+            platformDigest({
+                manifests: [
+                    { digest: "../../etc", platform: { os: "linux", architecture: "amd64" } },
+                ],
+            }),
+        ).toBeNull();
+        expect(
+            platformDigest({
+                manifests: [
+                    { digest: amd64, platform: { os: "unknown", architecture: "unknown" } },
+                ],
+            }),
+        ).toBeNull();
     });
 
     it("asks a Bearer challenge's realm for an anonymous token", () => {

@@ -96,7 +96,9 @@ export function logDay(value: string | number) {
 /** Bytes the way Docker and `uc images` print them: 1000-based, three digits (`1.17GB`). */
 export function formatImageSize(bytes: number) {
     const units = ["B", "kB", "MB", "GB", "TB"];
-    const index = Math.min(units.length - 1, Math.max(0, Math.floor(Math.log10(bytes) / 3)));
+    // Rounded first, so 999,999 bytes becomes 1MB rather than 1000kB.
+    const rounded = Number(bytes.toPrecision(3));
+    const index = Math.min(units.length - 1, Math.max(0, Math.floor(Math.log10(rounded) / 3)));
 
-    return `${Number((bytes / 1000 ** index).toPrecision(3))}${units[index]}`;
+    return `${Number((rounded / 1000 ** index).toPrecision(3))}${units[index]}`;
 }

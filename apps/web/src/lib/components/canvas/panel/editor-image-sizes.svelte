@@ -62,7 +62,9 @@
             orpc.resources.getRegistryImageSize.queryOptions({
                 input: { image },
                 retry: false,
-                staleTime: 60 * 60_000,
+                // A miss may be a passing network error, so it is asked again sooner.
+                staleTime: (query) =>
+                    query.state.data == null ? 60_000 : 60 * 60_000,
             }),
         ),
     }));
@@ -74,7 +76,8 @@
         for (const { key } of images) {
             const size = clusterQuery.data?.[key];
 
-            if (size !== undefined) sizes.set(key, size);
+            if (size !== undefined)
+                sizes.set(key, { bytes: size, download: false });
             else if (clusterQuery.isLoading)
                 sizes.set(key, "loading");
         }
@@ -83,7 +86,8 @@
             const query = registryQueries[index];
 
             if (query?.isLoading) sizes.set(key, "loading");
-            else if (query?.data != null) sizes.set(key, query.data);
+            else if (query?.data != null)
+                sizes.set(key, { bytes: query.data, download: true });
         });
 
         return sizes;

@@ -99,12 +99,15 @@
         resourceId: resource.id,
     });
 
+    // A primitive, so a refetched resource object doesn't rerun the prefetch below.
+    const projectId = $derived(resource.projectId);
+
     // Listing the cluster's images takes seconds, so it starts when the panel opens, not with Compose.
     $effect(() => {
         // prefetchQuery ignores `enabled`, so an unknown cluster is skipped here.
         if (!isBucket && clusterId)
             void queryClient.prefetchQuery(
-                clusterImageSizes(clusterId, resource.projectId),
+                clusterImageSizes(clusterId, projectId),
             );
     });
 

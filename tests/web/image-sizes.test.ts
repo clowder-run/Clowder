@@ -47,6 +47,7 @@ describe("formatImageSize", () => {
         [6_810_000, "6.81MB"],
         [12_500_000, "12.5MB"],
         [356_000_000, "356MB"],
+        [999_999, "1MB"],
         [1_170_000_000, "1.17GB"],
     ])("formats %i as %s", (bytes, expected) => {
         expect(formatImageSize(bytes)).toBe(expected);

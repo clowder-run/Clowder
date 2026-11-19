@@ -5,8 +5,11 @@ import { mount, unmount } from "svelte";
 import { formatImageSize } from "$lib/format";
 import ImageSizeSkeleton from "./image-size-skeleton.svelte";
 
-/** A size in bytes, or `"loading"` while it is being looked up. */
-export type ImageSize = number | "loading";
+/**
+ * A size in bytes, or `"loading"` while it is being looked up. `download` marks a registry's
+ * compressed size, which is smaller than the unpacked size the cluster reports.
+ */
+export type ImageSize = { bytes: number; download: boolean } | "loading";
 
 // A regex instead of the YAML tree, so sizes stay while the file is half typed.
 const IMAGE_LINE = /^\s*image:\s*(["']?)([^\s"'#]+)\1\s*(?:#.*)?$/u;
@@ -41,7 +44,9 @@ class SizeWidget extends WidgetType {
     }
 
     override eq(other: SizeWidget) {
-        return other.size === this.size;
+        return this.size === "loading" || other.size === "loading"
+            ? this.size === other.size
+            : this.size.bytes === other.size.bytes && this.size.download === other.size.download;
     }
 
     toDOM() {
@@ -50,7 +55,12 @@ class SizeWidget extends WidgetType {
 
         if (this.size === "loading")
             skeletons.set(element, mount(ImageSizeSkeleton, { target: element }));
-        else element.textContent = formatImageSize(this.size);
+        else {
+            element.textContent = formatImageSize(this.size.bytes);
+            element.title = this.size.download
+                ? "Download size from the registry; not pulled on this cluster yet"
+                : "Size on the cluster";
+        }
 
         return element;
     }
@@ -81,6 +91,16 @@ function sizeDecorations(state: EditorState, sizes: Map<string, ImageSize>) {
     return ranges.finish();
 }
 
+// Built once: every `EditorView.theme` call mounts a new style rule, and sizes reconfigure often.
+const sizeTheme = EditorView.theme({
+    ".cm-image-size": {
+        display: "inline-block",
+        marginLeft: "2ch",
+        color: "var(--muted-foreground)",
+        fontSize: "12px",
+    },
+});
+
 /** Shows each `image:` line's size after it, keyed by `imageKey`. */
 export function imageSizes(sizes: Map<string, ImageSize>): Extension {
     return [
@@ -90,13 +110,6 @@ export function imageSizes(sizes: Map<string, ImageSize>): Extension {
                 transaction.docChanged ? sizeDecorations(transaction.state, sizes) : current,
             provide: (field) => EditorView.decorations.from(field),
         }),
-        EditorView.theme({
-            ".cm-image-size": {
-                display: "inline-block",
-                marginLeft: "2ch",
-                color: "var(--muted-foreground)",
-                fontSize: "12px",
-            },
-        }),
+        sizeTheme,
     ];
 }

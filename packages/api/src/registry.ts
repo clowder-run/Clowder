@@ -136,14 +136,13 @@ const imageManifestSchema = v.object({
     layers: v.array(v.object({ size: v.number() })),
 });
 
-/** The image an index points at for linux/amd64, or its first entry. */
+/** The image an index points at for linux/amd64, or `null` when it has none. */
 export function platformDigest(index: v.InferOutput<typeof indexSchema>) {
     // shortcut: assumes amd64 machines, like every machine Clowder provisions today; pass the
-    // cluster's platform once arm machines join.
-    const entry =
-        index.manifests.find(
-            ({ platform }) => platform?.os === "linux" && platform.architecture === "amd64",
-        ) ?? index.manifests[0];
+    // cluster's platform once arm machines join. Another entry may be an attestation, so none is guessed.
+    const entry = index.manifests.find(
+        ({ platform }) => platform?.os === "linux" && platform.architecture === "amd64",
+    );
 
     // The registry is untrusted and the digest goes into the next URL.
     return entry && DIGEST.test(entry.digest) ? entry.digest : null;
@@ -165,7 +164,7 @@ export async function registryImageSize(image: string) {
     if (index.success) {
         const digest = platformDigest(index.output);
 
-        if (!digest) throw new Error(`${image} lists no images.`);
+        if (!digest) throw new Error(`${image} has no linux/amd64 image.`);
         manifest = JSON.parse((await get("GET", digest)).text);
     }
 
