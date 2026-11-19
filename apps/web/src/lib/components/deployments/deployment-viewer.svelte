@@ -30,6 +30,12 @@
         FramePanel,
     } from "$lib/components/ui/frame";
     import { Input } from "$lib/components/ui/input";
+    import {
+        Menu,
+        MenuItem,
+        MenuPopup,
+        MenuTrigger,
+    } from "$lib/components/ui/menu";
     import { Skeleton } from "$lib/components/ui/skeleton";
     import { Spinner } from "$lib/components/ui/spinner";
     import { DeploymentStream } from "$lib/deployments/deployment-stream.svelte";
@@ -40,6 +46,7 @@
     import Check from "phosphor-svelte/lib/CheckIcon";
     import Copy from "phosphor-svelte/lib/CopyIcon";
     import Download from "phosphor-svelte/lib/DownloadSimpleIcon";
+    import EllipsisVertical from "phosphor-svelte/lib/DotsThreeVerticalIcon";
     import { createMutation } from "@tanstack/svelte-query";
     import {
         parseAsBoolean,
@@ -278,25 +285,6 @@
         <!-- The resource page is where a failed deployment gets fixed and redeployed. -->
         <Button size="sm" href={resourceHref}>Open resource</Button>
     {/if}
-    {#if deployment?.spec}
-        <Button
-            variant="outline"
-            size="sm"
-            onclick={() => (view.dialog.current = "spec")}
-        >
-            View spec
-        </Button>
-    {/if}
-    {#if stream.canDelete}
-        <Button
-            variant="destructive-outline"
-            size="sm"
-            onclick={() => (view.dialog.current = "delete")}
-        >
-            Delete
-            <span class="max-sm:hidden">deployment</span>
-        </Button>
-    {/if}
     {#if stream.canCancel}
         <Button
             variant="destructive-outline"
@@ -308,6 +296,34 @@
             Cancel
             <span class="max-sm:hidden">deployment</span>
         </Button>
+    {/if}
+    {#if deployment?.spec || stream.canDelete}
+        <Menu>
+            <MenuTrigger
+                class="flex size-8 items-center justify-center rounded-md transition-colors hover:bg-accent"
+                aria-label="Deployment actions"
+            >
+                <EllipsisVertical class="size-4" aria-hidden="true" />
+            </MenuTrigger>
+            <MenuPopup align="end" class="min-w-48">
+                {#if deployment?.spec}
+                    <MenuItem
+                        onclick={() => (view.dialog.current = "spec")}
+                    >
+                        View spec
+                    </MenuItem>
+                {/if}
+                {#if stream.canDelete}
+                    <MenuItem
+                        variant="destructive"
+                        onclick={() =>
+                            (view.dialog.current = "delete")}
+                    >
+                        Delete deployment
+                    </MenuItem>
+                {/if}
+            </MenuPopup>
+        </Menu>
     {/if}
 {/snippet}
 
