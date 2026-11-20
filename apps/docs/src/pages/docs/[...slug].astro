@@ -17,7 +17,9 @@ export const getStaticPaths = (() => {
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { page } = Astro.props;
+
 const { body: Content, toc } = await page.data.load();
+
 const pageTree = await source.serializePageTree(source.getPageTree());
 ---
 

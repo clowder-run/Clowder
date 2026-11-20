@@ -17,13 +17,15 @@ uc deploy
         APP_URL: {
             type: "string",
             required: true,
-            description: "Domain Clowder is served on, without https://. Caddy uses it to route and issue the certificate.",
+            description:
+                "Domain Clowder is served on, without https://. Caddy uses it to route and issue the certificate.",
         },
         APP_SECRET: {
             type: "string",
             required: true,
             default: "Generated",
-            description: "At least 32 characters. Encrypts every secret Clowder stores. If it's lost, so is everything it encrypted.",
+            description:
+                "At least 32 characters. Encrypts every secret Clowder stores. If it's lost, so is everything it encrypted.",
         },
         POSTGRES_PASSWORD: {
             type: "string",
@@ -39,17 +41,20 @@ uc deploy
         REDIS_URL: {
             type: "url",
             default: "redis://clowder-cache.internal:6379",
-            description: "Redis-compatible URL for the shared cache, sessions and auth rate limits. Without it, Clowder caches in memory and keeps sessions in Postgres.",
+            description:
+                "Redis-compatible URL for the shared cache, sessions and auth rate limits. Without it, Clowder caches in memory and keeps sessions in Postgres.",
         },
         APP_USE_INTERNAL_CACHE: {
             type: "boolean",
             default: "false",
-            description: "Keep a per-replica in-memory cache in front of REDIS_URL. Faster, but a replica can serve entries another one already changed for up to 10 minutes.",
+            description:
+                "Keep a per-replica in-memory cache in front of REDIS_URL. Faster, but a replica can serve entries another one already changed for up to 10 minutes.",
         },
         USE_INTERNAL_WORKER: {
             type: "boolean",
             default: "true",
-            description: "Run background jobs inside Clowder. Set to false only when the separate clowder-worker container runs, or deployments and monitoring jobs never run.",
+            description:
+                "Run background jobs inside Clowder. Set to false only when the separate clowder-worker container runs, or deployments and monitoring jobs never run.",
         },
     }}
 />
@@ -62,15 +67,18 @@ uc deploy
             type: "string",
             required: true,
             default: "Generated",
-            description: "Token Clowder uses to talk to the sidecar. The sidecar won't start without it.",
+            description:
+                "Token Clowder uses to talk to the sidecar. The sidecar won't start without it.",
         },
         SIDECAR_TLS_CERT: {
             type: "string",
-            description: "PEM-encoded certificate the sidecar serves HTTPS with. Required with --tls-listen.",
+            description:
+                "PEM-encoded certificate the sidecar serves HTTPS with. Required with --tls-listen.",
         },
         SIDECAR_TLS_KEY: {
             type: "string",
-            description: "PEM-encoded private key for SIDECAR_TLS_CERT. Required with --tls-listen.",
+            description:
+                "PEM-encoded private key for SIDECAR_TLS_CERT. Required with --tls-listen.",
         },
     }}
 />

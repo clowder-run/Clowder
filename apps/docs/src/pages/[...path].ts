@@ -5,8 +5,10 @@ export const prerender = true;
 
 export const getStaticPaths = (async () => {
     const paths: { params: { path: string } }[] = [];
+
     for (const path of await docsLlms.files())
         paths.push({ params: { path: decodeURI(path.slice(1)) } });
+
     return paths;
 }) satisfies GetStaticPaths;
 

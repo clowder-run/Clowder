@@ -1,8 +1,4 @@
 {
     "title": "Organization",
-    "pages": [
-        "members",
-        "api-keys",
-        "admin"
-    ]
+    "pages": ["members", "api-keys", "admin"]
 }

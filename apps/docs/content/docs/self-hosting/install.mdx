@@ -2,27 +2,35 @@
 title: Install
 ---
 
-
 ## Quick install
 
 Go to [Quickstart](/docs/quickstart)
 
 ## Manual installation
+
 ### Prerequisites
+
 1. Have [Uncloud CLI](https://uncloud.run/docs/getting-started/install-cli) installed.
 2. An [Uncloud cluster](https://uncloud.run/docs/getting-started/deploy-demo-app#set-up-your-server) ready.
 
 ### Instructions
+
 1. Download the [`compose.yml`](https://github.com/clowder-run/clowder/blob/master/compose.yml) and [`.env.example`](https://github.com/clowder-run/clowder/blob/master/.env.example)
+
 ```bash
 curl -o .env https://raw.githubusercontent.com/clowder-run/clowder/refs/heads/master/.env.example && curl -o compose.yml https://raw.githubusercontent.com/clowder-run/clowder/refs/heads/master/compose.yml
 ```
+
 2. Seed `APP_SECRET`, `POSTGRES_PASSWORD` and `SIDECAR_TOKEN` each with their own 32 char minimum secret
+
 ```bash
 openssl rand -hex 32
 ```
+
 3. Start the stack
+
 ```bash
 uc deploy -f compose.yml
 ```
+
 4. Open the dashboard and go ahead with the initial setup. It will be accessible from the `APP_URL` you set.
