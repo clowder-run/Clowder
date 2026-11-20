@@ -89,14 +89,14 @@ describe("creating every template (PostgreSQL)", () => {
         const [group] = await db
             .select()
             .from(resourceGroups)
-            .where(eq(resourceGroups.id, app.groupId!));
+            .where(eq(resourceGroups.id, app!.groupId!));
 
         expect(group).toMatchObject({ projectId, name: `${appId} ${version}` });
 
         const created = await db
             .select()
             .from(resources)
-            .where(eq(resources.groupId, app.groupId!));
+            .where(eq(resources.groupId, app!.groupId!));
 
         expect(created).toHaveLength(1 + Object.keys(files.companions).length);
 
