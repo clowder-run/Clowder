@@ -53,6 +53,7 @@
         type EdgeLayer,
     } from "./controls/canvas-controls.svelte";
     import GroupDialogs from "./controls/group-dialogs.svelte";
+    import ConfirmDialog from "$lib/components/settings/confirm-dialog.svelte";
     import MoveServiceDialog from "./controls/move-service-dialog.svelte";
     import {
         buildCanvas,
@@ -277,6 +278,7 @@
                 "move",
                 "copy",
                 "duplicate",
+                "delete-group",
             ].find((name): name is GroupAction => name === action),
             group: groups.find((group) => group.id === resourceId),
             resource: resources.find(
@@ -345,6 +347,9 @@
                 }),
             )?.[resourceId];
 
+            // No containers means no service to start or stop; the sidecar would 404 on either.
+            if (containers?.length === 0) return undefined;
+
             return containers && allExited(containers)
                 ? "stopped"
                 : "running";
@@ -393,7 +398,6 @@
                     ) ?? false
             );
         },
-        ungroup: (groupId) => void ungroup(groupId),
     });
 
     async function refreshGraph() {
@@ -1382,6 +1386,26 @@
     )}
     action={editing.action}
     onclose={() => void edit.set(null)}
+/>
+
+<ConfirmDialog
+    bind:open={
+        () =>
+            editing.action === "delete-group" &&
+            editing.group !== undefined,
+        (open) => {
+            if (!open) void edit.set(null);
+        }
+    }
+    title="Delete group?"
+    description={`This deletes ${editing.group?.name ?? "the group"} and its icon. Its resources stay on the canvas.`}
+    confirmLabel="Delete group"
+    onconfirm={() => {
+        const id = editing.group?.id;
+
+        void edit.set(null);
+        if (id) void ungroup(id);
+    }}
 />
 
 {#if editing.action === "move-service" && editing.resource}

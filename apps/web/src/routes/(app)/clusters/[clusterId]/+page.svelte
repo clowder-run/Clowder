@@ -4,7 +4,7 @@
     import AddMachineDialog from "$lib/components/clusters/add-machine-dialog.svelte";
     import CaddyDialog from "$lib/components/clusters/caddy-dialog.svelte";
     import ClusterCaddyCard from "$lib/components/clusters/cluster-caddy-card.svelte";
-    import ClusterConnectionsFlow from "$lib/components/clusters/cluster-connections-flow.svelte";
+    import ClusterConnectionsMatrix from "$lib/components/clusters/cluster-connections-matrix.svelte";
     import ClusterDomainCard from "$lib/components/clusters/cluster-domain-card.svelte";
     import ClusterDomainDialog from "$lib/components/clusters/cluster-domain-dialog.svelte";
     import ClusterMachinesTable from "$lib/components/clusters/cluster-machines-table.svelte";
@@ -23,13 +23,6 @@
     import { Badge } from "$lib/components/ui/badge";
     import { Button } from "$lib/components/ui/button";
     import { Card, CardPanel } from "$lib/components/ui/card";
-    import {
-        Frame,
-        FrameDescription,
-        FrameHeader,
-        FramePanel,
-        FrameTitle,
-    } from "$lib/components/ui/frame";
     import {
         Empty,
         EmptyContent,
@@ -437,27 +430,7 @@
 
             <!-- Connections are paths between machines, so a single machine has none to show. -->
             {#if machines.length > 1}
-                <Frame class="min-w-0">
-                    <FrameHeader
-                        class="flex-row items-start justify-between gap-3 px-2.5 py-3"
-                    >
-                        <div class="min-w-0">
-                            <FrameTitle>
-                                Machine connections
-                            </FrameTitle>
-                            <FrameDescription>
-                                Measured paths between machines in the
-                                cluster.
-                            </FrameDescription>
-                        </div>
-                        <Badge variant="secondary" class="shrink-0">
-                            {links.length}
-                        </Badge>
-                    </FrameHeader>
-                    <FramePanel class="overflow-hidden p-0">
-                        <ClusterConnectionsFlow {machines} {links} />
-                    </FramePanel>
-                </Frame>
+                <ClusterConnectionsMatrix {machines} {links} />
             {/if}
 
             <div class="grid gap-6 lg:grid-cols-3">

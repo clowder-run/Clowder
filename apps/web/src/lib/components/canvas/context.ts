@@ -15,7 +15,8 @@ export type GroupAction =
     | "move-service"
     | "move"
     | "copy"
-    | "duplicate";
+    | "duplicate"
+    | "delete-group";
 
 export const [getCanvasActions, setCanvasActions] = createContext<{
     /** Opens a dialog for a group (rename, icons) or a resource (everything else). */
@@ -59,8 +60,6 @@ export const [getCanvasActions, setCanvasActions] = createContext<{
     /** Unmounts a config from every service; it stays on the canvas as a card of its own. */
     disconnectConfig: (nodeId: string) => void;
     isConfigMounted: (nodeId: string) => boolean;
-    /** Railway's "Remove Group": the frame goes, its resources stay. */
-    ungroup: (groupId: string) => void;
 }>();
 
 /** The project's cluster, so cards can ask it how their containers are doing. */

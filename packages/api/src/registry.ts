@@ -1,6 +1,7 @@
 import { guardedHttpsRequest, type GuardedResponse } from "@clowder/s3/guarded-request";
 import * as v from "valibot";
-import { parseImageReference } from "./image-reference";
+import { dockerHubImageSize } from "./docker-hub";
+import { DOCKER_HUB, parseImageReference, type ImageReference } from "./image-reference";
 
 // Index types first, so a multi-platform tag pins the index and each machine pulls its own platform.
 const MANIFEST_TYPES = [
@@ -63,6 +64,41 @@ async function anonymousToken(challenge: string) {
     return "token" in body ? body.token : body.access_token;
 }
 
+/** Requests `image`'s manifests by tag or digest, fetching an anonymous token once when asked. */
+function manifests(image: string, reference: ImageReference) {
+    let token: string | null = null;
+
+    return async (method: "GET" | "HEAD", tagOrDigest: string) => {
+        const url = new URL(
+            `https://${reference.registry}/v2/${reference.repository}/manifests/${tagOrDigest}`,
+        );
+
+        const request = () =>
+            send(
+                url,
+                method,
+                token
+                    ? { Accept: MANIFEST_TYPES, Authorization: `Bearer ${token}` }
+                    : { Accept: MANIFEST_TYPES },
+            );
+
+        let response = await request();
+        const challenge = header(response, "www-authenticate");
+
+        if (response.status === 401 && challenge && !token) {
+            token = await anonymousToken(challenge);
+            response = await request();
+        }
+
+        if (response.status === 404) throw new Error(`${image} was not found in its registry.`);
+
+        if (response.status !== 200)
+            throw new Error(`The registry answered ${response.status} for ${image}.`);
+
+        return response;
+    };
+}
+
 /**
  * Pins a public image to the digest its tag points at now, as `name:tag@sha256:...`.
  * An image that already names a digest is returned as is.
@@ -74,29 +110,7 @@ export async function pinImageDigest(image: string) {
 
     if (reference.digest) return image;
 
-    const url = new URL(
-        `https://${reference.registry}/v2/${reference.repository}/manifests/${reference.tag}`,
-    );
-
-    const head = (token: string | null) =>
-        send(
-            url,
-            "HEAD",
-            token
-                ? { Accept: MANIFEST_TYPES, Authorization: `Bearer ${token}` }
-                : { Accept: MANIFEST_TYPES },
-        );
-
-    let response = await head(null);
-    const challenge = header(response, "www-authenticate");
-
-    if (response.status === 401 && challenge)
-        response = await head(await anonymousToken(challenge));
-
-    if (response.status === 404) throw new Error(`${image} was not found in its registry.`);
-
-    if (response.status !== 200)
-        throw new Error(`The registry answered ${response.status} for ${image}.`);
+    const response = await manifests(image, reference)("HEAD", reference.tag);
 
     // shortcut: assumes the registry returns the digest on HEAD, as Docker Hub, GHCR and Zot do;
     // hash a GET of the manifest if one doesn't.
@@ -106,4 +120,55 @@ export async function pinImageDigest(image: string) {
         throw new Error(`The registry did not return a digest for ${image}.`);
 
     return `${reference.name}:${reference.tag}@${digest}`;
+}
+
+const indexSchema = v.object({
+    manifests: v.array(
+        v.object({
+            digest: v.string(),
+            platform: v.optional(v.object({ os: v.string(), architecture: v.string() })),
+        }),
+    ),
+});
+
+const imageManifestSchema = v.object({
+    config: v.object({ size: v.number() }),
+    layers: v.array(v.object({ size: v.number() })),
+});
+
+/** The image an index points at for linux/amd64, or `null` when it has none. */
+export function platformDigest(index: v.InferOutput<typeof indexSchema>) {
+    // shortcut: assumes amd64 machines, like every machine Clowder provisions today; pass the
+    // cluster's platform once arm machines join. Another entry may be an attestation, so none is guessed.
+    const entry = index.manifests.find(
+        ({ platform }) => platform?.os === "linux" && platform.architecture === "amd64",
+    );
+
+    // The registry is untrusted and the digest goes into the next URL.
+    return entry && DIGEST.test(entry.digest) ? entry.digest : null;
+}
+
+/** A public image's compressed download size in bytes, as its registry reports it. */
+export async function registryImageSize(image: string) {
+    const reference = parseImageReference(image);
+
+    if (!reference) throw new Error(`${image} is not a valid image reference.`);
+
+    // Docker Hub counts every manifest GET as a pull, so ask its web API instead.
+    if (reference.registry === DOCKER_HUB) return dockerHubImageSize(reference);
+
+    const get = manifests(image, reference);
+    let manifest = JSON.parse((await get("GET", reference.digest ?? reference.tag)).text);
+    const index = v.safeParse(indexSchema, manifest);
+
+    if (index.success) {
+        const digest = platformDigest(index.output);
+
+        if (!digest) throw new Error(`${image} has no linux/amd64 image.`);
+        manifest = JSON.parse((await get("GET", digest)).text);
+    }
+
+    const { config, layers } = v.parse(imageManifestSchema, manifest);
+
+    return layers.reduce((total, layer) => total + layer.size, config.size);
 }

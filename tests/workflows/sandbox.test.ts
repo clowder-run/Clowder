@@ -36,6 +36,7 @@ describe("sandbox deployments", () => {
     let admin: ReturnType<typeof createDb>;
     let db: ReturnType<typeof createDb>;
     let organizationId: string;
+    let inserted = 0;
     // What the fake sidecar received and answers.
     let deployed: string[] = [];
     let removed: string[] = [];
@@ -140,7 +141,8 @@ describe("sandbox deployments", () => {
             provider: "uncloud",
             clusterId,
             machine,
-            sshPort: 30000 + Math.floor(Math.random() * 2000),
+            // Unique per cluster, so a random port would collide now and then.
+            sshPort: 30000 + inserted++,
             volumeId,
             image: `pkg.bar/sandbox:latest@sha256:${"a".repeat(64)}`,
             status: name === "ProvisionSandbox" ? "provisioning" : "destroying",

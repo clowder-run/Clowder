@@ -149,7 +149,14 @@ export const resourceConnectionRouter = {
             if (!service) return null;
 
             const prefix = resourceComposePrefix(resource);
-            const env = await postgresEnv(db, input.clusterId, resource, resource.draftSpec);
+
+            const env = await postgresEnv(
+                db,
+                input.clusterId,
+                resource,
+                resource.draftSpec,
+                service.name,
+            );
 
             const url = (host: string, port: number) =>
                 `postgresql://${encodeURIComponent(env.POSTGRES_USER ?? "postgres")}:${encodeURIComponent(env.POSTGRES_PASSWORD ?? "")}@${host}:${port}/${encodeURIComponent(env.POSTGRES_DB ?? env.POSTGRES_USER ?? "postgres")}`;

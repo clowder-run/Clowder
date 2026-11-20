@@ -85,7 +85,7 @@ services:
     clowder-cache:
         image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
         volumes:
-            - clowdercache_data:/data
+            - clowder_cache_data:/data
         restart: unless-stopped
 
     sidecar:

@@ -9,6 +9,7 @@ import {
 import { resourceSlug } from "@clowder/db/slug";
 import { unwrap, type UcClient } from "@clowder/uncloud";
 import {
+    composeServiceVariables,
     composeVariables,
     prefixName,
     resourceComposePrefix,
@@ -111,13 +112,34 @@ const postgresInput = v.object({
     resourceId: v.pipe(v.string(), v.uuid()),
 });
 
-/** The resource's Variables resolved like a deploy, so referenced and interpolated values are real. */
+/** The variables the database container sees: Variables plus its Compose `environment`. */
 export async function postgresEnv(
     db: Database,
     clusterId: string,
     resource: Resource,
     compose: string,
+    service: string,
 ): Promise<Record<string, string | undefined>> {
+    const { variables, environment } = await postgresVariables(
+        db,
+        clusterId,
+        resource,
+        compose,
+        service,
+    );
+
+    // Compose `environment` wins over Variables in the container, e.g. `POSTGRES_PASSWORD: ${DB_PASSWORD}`.
+    return { ...variables, ...environment };
+}
+
+/** The resource's Variables and the database service's Compose `environment`, resolved like a deploy. */
+async function postgresVariables(
+    db: Database,
+    clusterId: string,
+    resource: Resource,
+    compose: string,
+    service: string,
+): Promise<{ variables: Record<string, string | undefined>; environment: Record<string, string> }> {
     const envText = resourceEnv(resource);
 
     try {
@@ -131,7 +153,7 @@ export async function postgresEnv(
             .where(eq(projects.id, resource.projectId));
 
         // `CLOWDER_PROJECT_*` / `CLOWDER_RESOURCE_*` resolve like the deploy does.
-        return composeVariables(
+        const args = [
             compose,
             envText,
             resourceComposePrefix(resource),
@@ -143,9 +165,18 @@ export async function postgresEnv(
                 resourceId: resource.id,
                 resourceName: resource.name,
             },
-        );
+        ] as const;
+
+        const variables = composeVariables(...args);
+
+        // Another service failing to interpolate must not drop the resolved Variables.
+        try {
+            return { variables, environment: composeServiceVariables(...args, service) };
+        } catch {
+            return { variables, environment: {} };
+        }
     } catch {
-        return parseEnv(envText);
+        return { variables: parseEnv(envText), environment: {} };
     }
 }
 
@@ -232,7 +263,7 @@ async function execPostgres(
         throw new ORPCError("PRECONDITION_FAILED", { message: "Deploy the database first." });
 
     const name = prefixName(service.name, resourceComposePrefix(resource));
-    const env = await postgresEnv(db, clusterId, resource, resource.spec ?? "");
+    const env = await postgresEnv(db, clusterId, resource, resource.spec ?? "", service.name);
 
     const { containers } = await unwrap(
         uc.GET("/api/v1/services/{id}", { params: { path: { id: name } } }),
@@ -370,6 +401,34 @@ export const resourcePostgresRouter = {
                     .for("update");
 
                 if (!resource) throw new ORPCError("NOT_FOUND", { message: "Resource not found." });
+
+                let service;
+
+                try {
+                    service = resource.draftSpec ? postgresService(resource.draftSpec) : undefined;
+                } catch {
+                    service = undefined;
+                }
+
+                if (service && resource.draftSpec) {
+                    const { variables, environment } = await postgresVariables(
+                        db,
+                        input.clusterId,
+                        resource,
+                        resource.draftSpec,
+                        service.name,
+                    );
+
+                    // Rotating the Variable would leave the container on the password Compose sets.
+                    if (
+                        environment.POSTGRES_PASSWORD !== undefined &&
+                        environment.POSTGRES_PASSWORD !== variables.POSTGRES_PASSWORD
+                    )
+                        throw new ORPCError("PRECONDITION_FAILED", {
+                            message:
+                                "Compose sets POSTGRES_PASSWORD to another value. Change the password where Compose reads it from.",
+                        });
+                }
 
                 // Hex needs no quoting in SQL or `.env`.
                 const password = randomBytes(16).toString("hex");

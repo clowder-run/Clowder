@@ -13,6 +13,14 @@ const domainCard = (page: Page) =>
         .locator("[data-slot=frame]")
         .filter({ has: page.locator("[data-slot=frame-panel-title]", { hasText: /^Domain$/u }) });
 
+// The latency matrix lists machine names in its rows too.
+const machineRow = (page: Page, name: string) =>
+    page
+        .locator("[data-slot=frame]")
+        .filter({ has: page.locator("[data-slot=frame-panel-title]", { hasText: /^Machines$/u }) })
+        .getByRole("row")
+        .filter({ hasText: name });
+
 /** Opens the delete confirmation from a cluster row's actions menu. */
 async function askDelete(page: Page, name: string) {
     await row(page, name)
@@ -247,10 +255,12 @@ test("an admin removes a machine, but not the one Clowder connects through", asy
     const { id } = await createCluster(page);
     await page.goto(`/clusters/${id}`);
 
-    await expect(row(page, MACHINE.name)).toContainText("Clowder connects through this machine");
+    await expect(machineRow(page, MACHINE.name)).toContainText(
+        "Clowder connects through this machine",
+    );
     await expect(page.getByRole("button", { name: `Actions for ${MACHINE.name}` })).toHaveCount(0);
 
-    await row(page, WORKER.name)
+    await machineRow(page, WORKER.name)
         .getByRole("button", { name: `Actions for ${WORKER.name}` })
         .click();
     await page.getByRole("menuitem", { name: "Remove machine" }).click();
@@ -261,7 +271,7 @@ test("an admin removes a machine, but not the one Clowder connects through", asy
 
     await expect(confirm).toBeHidden();
     await expect(page.getByText(`Removed ${WORKER.name}`)).toBeVisible();
-    await expect(row(page, WORKER.name)).toHaveCount(0);
+    await expect(machineRow(page, WORKER.name)).toHaveCount(0);
     await expect(page).not.toHaveURL(/machine=/u);
 });
 

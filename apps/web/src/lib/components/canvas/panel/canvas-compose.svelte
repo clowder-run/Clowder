@@ -10,9 +10,14 @@
     import { Skeleton } from "$lib/components/ui/skeleton";
     import { createQuery } from "@tanstack/svelte-query";
     import { parseAsBoolean, useQueryState } from "nuqs-svelte";
+    import type { EditorView } from "@codemirror/view";
     import type { CanvasResource } from "../graph";
+    import EditorImageSizes from "./editor-image-sizes.svelte";
 
-    let { resource }: { resource: CanvasResource } = $props();
+    let {
+        resource,
+        clusterId,
+    }: { resource: CanvasResource; clusterId: string } = $props();
 
     const input = $derived({
         projectId: resource.projectId,
@@ -53,6 +58,8 @@
             retry: false,
         }),
     );
+
+    let view = $state<EditorView>();
 
     // Follows the saved draft until edited; saving resets it.
     let compose = $derived(details?.draftSpec ?? "");
@@ -160,7 +167,14 @@
         <div class="compose min-h-0 flex-1">
             <CodeEditor
                 bind:value={compose}
+                bind:view
                 readOnly={readOnly || saving}
+            />
+            <EditorImageSizes
+                {view}
+                text={details?.draftSpec ?? ""}
+                {clusterId}
+                projectId={resource.projectId}
             />
         </div>
     {:else if formattedQuery.isPending}
@@ -177,7 +191,17 @@
         </Alert>
     {:else}
         <div class="compose min-h-0 flex-1">
-            <CodeEditor value={formattedQuery.data.yaml} readOnly />
+            <CodeEditor
+                value={formattedQuery.data.yaml}
+                readOnly
+                bind:view
+            />
+            <EditorImageSizes
+                {view}
+                text={formattedQuery.data.yaml}
+                {clusterId}
+                projectId={resource.projectId}
+            />
         </div>
     {/if}
 </div>

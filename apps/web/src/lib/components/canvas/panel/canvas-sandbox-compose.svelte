@@ -7,9 +7,16 @@
     import { Skeleton } from "$lib/components/ui/skeleton";
     import { orpc } from "$lib/api/orpc";
     import { createQuery } from "@tanstack/svelte-query";
+    import type { EditorView } from "@codemirror/view";
     import type { CanvasResource } from "../graph";
+    import EditorImageSizes from "./editor-image-sizes.svelte";
 
-    let { resource }: { resource: CanvasResource } = $props();
+    let {
+        resource,
+        clusterId,
+    }: { resource: CanvasResource; clusterId: string } = $props();
+
+    let view = $state<EditorView>();
 
     const composeQuery = createQuery(() =>
         orpc.sandboxes.compose.queryOptions({
@@ -37,5 +44,12 @@
         label="Sandbox Compose"
         fill
         readOnly
+        bind:view
+    />
+    <EditorImageSizes
+        {view}
+        text={composeQuery.data.compose ?? ""}
+        {clusterId}
+        projectId={resource.projectId}
     />
 {/if}

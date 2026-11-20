@@ -3,6 +3,7 @@
         Menu,
         MenuItem,
         MenuPopup,
+        MenuSeparator,
         MenuSub,
         MenuSubPopup,
         MenuSubTrigger,
@@ -12,6 +13,7 @@
     import Box from "phosphor-svelte/lib/CubeIcon";
     import EllipsisVertical from "phosphor-svelte/lib/DotsThreeVerticalIcon";
     import Group from "phosphor-svelte/lib/BoundingBoxIcon";
+    import Trash from "phosphor-svelte/lib/TrashIcon";
     import type { Node, NodeProps } from "@xyflow/svelte";
     import { orpc } from "$lib/api/orpc";
     import { containerInfo } from "$lib/resources/container-info";
@@ -137,9 +139,14 @@
                 <MenuItem onclick={() => actions.edit("copy", id)}>
                     Copy to Project…
                 </MenuItem>
-                <!-- Railway's "Remove Group": the frame goes, its resources stay. -->
-                <MenuItem onclick={() => actions.ungroup(id)}>
-                    Remove Group
+                <!-- The frame goes, its resources stay on the canvas ungrouped. -->
+                <MenuSeparator />
+                <MenuItem
+                    variant="destructive"
+                    onclick={() => actions.edit("delete-group", id)}
+                >
+                    <Trash aria-hidden="true" />
+                    Delete group
                 </MenuItem>
             {/if}
         </MenuPopup>
