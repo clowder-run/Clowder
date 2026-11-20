@@ -8,6 +8,7 @@ import type {
     DeployComposeEvent,
     DomainResponse,
     ErrorResponse,
+    ImageGroup,
     LogEvent,
     Machine,
     MachineExecResponse,
@@ -101,7 +102,7 @@ type Reply =
     | RemoveMachineResponse
     | StatusResponse
     | Service
-    | { items: Machine[] | Service[] }
+    | { items: ImageGroup[] | Machine[] | Service[] }
     | { status: number; truncated: boolean; body: string };
 
 function json(response: ServerResponse, status: number, body: Reply) {
@@ -342,6 +343,10 @@ export async function startFakeSidecar() {
 
         if (get && path === "/api/v1/services")
             return json(response, 200, { items: [...services.values()] });
+
+        // Nothing pulled yet, so the Compose editor asks registries for sizes instead.
+        if (get && path === "/api/v1/images")
+            return json(response, 200, { items: [{ images: [], containerdStore: true }] });
 
         if (request.method === "POST" && path === "/api/v1/services/deploy/compose") {
             const body = v.parse(
