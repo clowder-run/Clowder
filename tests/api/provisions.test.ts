@@ -517,34 +517,23 @@ describe("cluster provisioning (PostgreSQL)", () => {
         ).toBe(true);
     });
 
-    it("skips the public domain on a LAN and accepts Tailscale addresses", async () => {
+    it("skips the public domain on a LAN", async () => {
         const lan = await attempt(await create("192.168.50.10"));
         const calls = await lines("calls");
 
         expect(lan.deployment.status).toBe("ready");
         expect(lan.cluster.sidecarUrl).toBe("https://192.168.50.10:51443");
         expect(calls.find((line) => line.startsWith("machine init"))).toContain("--no-dns");
-
-        const tailscale = await attempt(await create("100.101.102.103"));
-
-        expect(tailscale.deployment.status).toBe("ready");
-        expect(tailscale.cluster.sidecarUrl).toBe("https://100.101.102.103:51443");
     });
 
     it("tells private networks from the internet and never allows metadata services", () => {
-        for (const address of [
-            "10.1.2.3",
-            "172.16.0.1",
-            "192.168.1.10",
-            "100.64.0.1",
-            "fd7a:115c:a1e0::1",
-        ])
+        for (const address of ["10.1.2.3", "172.16.0.1", "192.168.1.10", "fd7a:115c:a1e0::1"])
             expect(isPrivateServerAddress(address), address).toBe(true);
 
-        for (const address of [PUBLIC_HOST, "172.32.0.1", "100.128.0.1", "2606:4700::1111"])
+        for (const address of [PUBLIC_HOST, "172.32.0.1", "100.64.0.1", "2606:4700::1111"])
             expect(isPrivateServerAddress(address), address).toBe(false);
 
-        for (const address of ["100.101.102.103", "192.168.1.10", PUBLIC_HOST])
+        for (const address of ["192.168.1.10", PUBLIC_HOST])
             expect(isAllowedServerAddress(address), address).toBe(true);
 
         for (const address of [
@@ -552,6 +541,7 @@ describe("cluster provisioning (PostgreSQL)", () => {
             "0.0.0.0",
             "169.254.169.254",
             "100.100.100.200",
+            "100.101.102.103",
             "::1",
             "fe80::1",
             "fd00:ec2::254",
