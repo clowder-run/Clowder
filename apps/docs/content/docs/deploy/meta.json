@@ -1,0 +1,16 @@
+{
+    "title": "Deploy",
+    "pages": [
+        "images",
+        "git",
+        "compose",
+        "databases",
+        "buckets",
+        "sandboxes",
+        "templates",
+        "configs",
+        "volumes",
+        "networking",
+        "logs-and-terminal"
+    ]
+}

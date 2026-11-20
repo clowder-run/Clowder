@@ -51,7 +51,11 @@ export async function sshKeyPair(comment: string) {
         ...sshString(text("none")),
         ...sshString(text("none")),
         ...sshString(new Uint8Array()),
-        ...[0, 0, 0, 1],
+        // uint32 number of keys: 1.
+        0,
+        0,
+        0,
+        1,
         ...sshString(blob),
         ...sshString(new Uint8Array(secret)),
     ]);

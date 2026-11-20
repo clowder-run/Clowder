@@ -41,14 +41,14 @@ To create a cluster from the dashboard, Clowder generates a single-use SSH key f
 
 Adding a machine to a cluster works the same way: Clowder generates a single-use key for the new server and runs `uc machine add` over SSH, reaching the cluster through its sidecar rather than SSH on an existing machine. It then starts the sidecar, Caddy and monitoring on the new machine, points the cluster's `uncld.dev` domain at it when it's a public server, and deletes the key once it has joined. Machines talk to each other over WireGuard on UDP port 51820, so a host firewall such as firewalld must let in that port and traffic on Uncloud's `uncloud` interface. Removing a machine works like `uc machine rm`: its containers are removed and the server is reset so it can be added again. A machine that's down is only taken out of the cluster, so run `uncloud-uninstall` on it before adding it again. The machine Clowder connects through can't be removed.
 
-Public servers also get a free `uncld.dev` domain for your apps, which needs ports 80 and 443 open to the internet. Servers on a private network or Tailscale (`100.64.0.0/10`) get no public domain. The sidecar URL uses the address you enter, so give cloud servers a static IP (an Elastic IP on EC2) or a hostname.
+Public servers also get a free `uncld.dev` domain for your apps, which needs ports 80 and 443 open to the internet. Servers on a private network get no public domain. The sidecar URL uses the address you enter, so give cloud servers a static IP (an Elastic IP on EC2) or a hostname.
 
 ## Getting Started
 
 ### Prerequisites
 
 - A Linux server you can SSH into as `root`, or as a user with passwordless sudo.
-- A domain with a DNS record pointing to that server, or the server's LAN or Tailscale IP address (browsers then warn about Caddy's own certificate until you trust the root certificate the installer saves)
+- A domain with a DNS record pointing to that server, or the server's LAN IP address (browsers then warn about Caddy's own certificate until you trust the root certificate the installer saves)
 
 ### Quick Install
 

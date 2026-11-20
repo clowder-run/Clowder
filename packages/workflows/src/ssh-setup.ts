@@ -100,7 +100,7 @@ export function sshFailure(message: string, user: string) {
     return message.replace(/connect using private key "[^"]*": /, "");
 }
 
-/** The address to connect to: LAN, Tailscale and public servers yes, loopback and metadata never. */
+/** The address to connect to: LAN and public servers yes, loopback and metadata never. */
 export async function serverAddress(host: string) {
     const addresses = await lookup(host, { all: true, verbatim: true }).catch(() => []);
 

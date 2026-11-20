@@ -85,14 +85,13 @@ is_ipv4() {
     printf '%s' "$1" | grep -Eq "^($octet\.){3}$octet\$"
 }
 
-# LAN (RFC 1918) and Tailscale (100.64.0.0/10) addresses, which the internet can't reach.
+# LAN (RFC 1918) addresses, which the internet can't reach.
 is_private_ipv4() {
     local a b
     IFS=. read -r a b _ <<<"$1"
     [ "$a" -eq 10 ] ||
         { [ "$a" -eq 172 ] && [ "$b" -ge 16 ] && [ "$b" -le 31 ]; } ||
-        { [ "$a" -eq 192 ] && [ "$b" -eq 168 ]; } ||
-        { [ "$a" -eq 100 ] && [ "$b" -ge 64 ] && [ "$b" -le 127 ]; }
+        { [ "$a" -eq 192 ] && [ "$b" -eq 168 ]; }
 }
 
 print_intro() {
@@ -198,7 +197,7 @@ choose_address() {
     note "Choose how you'll open Clowder in your browser:"
     note "  1. A domain, e.g. clowder.example.com. Caddy gets a trusted HTTPS certificate for it,"
     note "     so the server must be reachable from the internet on ports 80 and 443."
-    note "  2. An IP address, e.g. a server on your LAN or Tailscale. Caddy signs its own"
+    note "  2. An IP address, e.g. a server on your LAN. Caddy signs its own"
     note "     certificate, which browsers warn about until you trust it."
     while true; do
         prompt "Domain or IP address? Enter 1 or 2" "1"

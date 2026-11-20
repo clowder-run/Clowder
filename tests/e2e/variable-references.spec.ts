@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { expect, test, type Page } from "@playwright/test";
 import { parse } from "yaml";
 import { SIDECAR_DOMAIN } from "./fake-sidecar";
