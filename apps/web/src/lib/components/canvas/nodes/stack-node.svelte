@@ -83,7 +83,11 @@
 {#snippet menu()}
     <Menu>
         <MenuTrigger
-            class="nodrag nopan flex size-[26px] shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            class={cn(
+                // Right-click opens the same menu, so the dots only show on a hovered or selected frame; -mr pulls the narrow glyph to the edge.
+                "nodrag nopan -mr-1.5 flex size-[26px] shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:text-foreground focus-visible:opacity-100 group-hover/frame:opacity-100 data-popup-open:opacity-100",
+                selected && "opacity-100",
+            )}
             aria-label="{data.name} options"
             onpointerdown={(event: PointerEvent) =>
                 event.stopPropagation()}
@@ -157,7 +161,7 @@
     <!-- Railway's collapsed group: 288×264, its resources' icons in an inset box, a status line. -->
     <div
         class={cn(
-            "flex size-full cursor-pointer flex-col justify-between rounded-xl border bg-card px-6 py-3 transition-colors",
+            "group/frame flex size-full cursor-pointer flex-col justify-between rounded-xl border bg-card px-6 py-3 transition-colors",
             data.dropTarget
                 ? "border-foreground/40"
                 : selected
@@ -228,7 +232,7 @@
     <!-- Railway's default group: a faint grey wash, the card border colour, header 12px from the top. -->
     <div
         class={cn(
-            "size-full cursor-pointer rounded-xl border bg-muted-foreground/5 px-6 pt-3 transition-colors",
+            "group/frame size-full cursor-pointer rounded-xl border bg-muted-foreground/5 px-6 pt-3 transition-colors",
             // Railway lightens a frame while a card from elsewhere hovers it.
             data.dropTarget
                 ? "border-foreground/40 bg-muted-foreground/12"
