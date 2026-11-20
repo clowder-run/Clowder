@@ -1,0 +1,15 @@
+---
+title: Create a cluster
+---
+
+## Prerequisites
+1. A Linux machine.
+2. Root or passwordless sudo 
+3. SSH access
+
+
+Click on the `Create cluster` button and in the dropdown click on the `New cluster` button which will open a dialog in which you'll input the name of the cluster you want to provision, its IP, and SSH info and if you want to share Caddy's certificates across machine using [Uncloud-storage caddy plugin](https://uncloud.run/docs/concepts/ingress/cluster-storage-for-caddy)(RECOMMENDED)
+
+![create cluster](/screenshots/clusters/create-a-cluster/where-the-button-is.png)
+
+It will have you add a temporary ssh key onto the server, once you do that click on `Start setup` which will deploy the monitoring stack, the sidecar and Caddy. Usually takes less than a minute.

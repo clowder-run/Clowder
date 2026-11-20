@@ -1,0 +1,11 @@
+{
+    "title": "Clusters",
+    "pages": [
+        "create",
+        "connect-existing",
+        "machines",
+        "domains",
+        "sidecar",
+        "monitoring"
+    ]
+}
