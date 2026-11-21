@@ -1,4 +1,4 @@
-@import "@fontsource-variable/outfit";
+@import "allo-font/friendly";
 @import "@fontsource/maple-mono/400.css";
 @import "@fontsource/maple-mono/500.css";
 @import "tailwindcss";
@@ -16,7 +16,7 @@ html > body[data-scroll-locked] {
 }
 
 @theme {
-    --font-sans: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Allo", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -66,7 +66,7 @@ html > body[data-scroll-locked] {
     --sidebar-ring: var(--color-neutral-400);
 }
 
-/* Lime is the base above; the docs default to mono when no accent is picked. */
+/* Lime is the base above and the default when no accent is picked. */
 :root[data-accent="violet"] {
     --brand-h: 305;
     --brand-l: 0.52;
@@ -97,7 +97,6 @@ html > body[data-scroll-locked] {
     --brand-c: 0.18;
     --brand-foreground: oklch(0.2 0.04 350);
 }
-:root:not([data-accent]),
 :root[data-accent="mono"] {
     --tint: 0;
     --primary: var(--foreground);

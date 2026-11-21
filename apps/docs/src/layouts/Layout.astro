@@ -21,8 +21,11 @@ const { title, description, image } = Astro.props;
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>{title}</title>
+    <meta property="og:title" content={title} />
     {description && <meta name="description" content={description} />}
-    {image && <meta property="og:image" content={image} />}
+    {description && <meta property="og:description" content={description} />}
+    {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
+    {image && <meta name="twitter:card" content="summary_large_image" />}
     <ClientRouter />
     <script is:inline>
       // Applies the saved accent before first paint, and again after each client-side navigation swaps <html>.

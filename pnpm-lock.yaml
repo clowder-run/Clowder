@@ -302,15 +302,15 @@ importers:
       '@astrojs/react':
         specifier: ^7.1.7
         version: 7.1.9(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@fontsource-variable/outfit':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource/maple-mono':
         specifier: ^5.3.0
         version: 5.3.0
       '@fumadocs/astro':
         specifier: 0.3.0
         version: 0.3.0(d1a9df9919921a758015b35cdd6bb1d9)
+      allo-font:
+        specifier: ^1.0.3
+        version: 1.0.3
       astro:
         specifier: ^7.4.10
         version: 7.4.13(@types/node@26.5.1)(aws4fetch@1.0.20)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
@@ -444,6 +444,9 @@ importers:
       '@xyflow/svelte':
         specifier: 1.7.0
         version: 1.7.0(svelte@5.58.0)
+      allo-font:
+        specifier: ^1.0.3
+        version: 1.0.3
       better-auth:
         specifier: 'catalog:'
         version: 1.7.15(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.58.0))(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.58.0)(typescript@6.0.3))(drizzle-kit@1.0.0-rc.5-5935859)(drizzle-orm@1.0.0-rc.5-5935859(@effect/sql-pg@4.0.0-rc.116(effect@4.0.0-rc.116))(@types/pg@8.23.1)(effect@4.0.0-rc.116)(pg@8.23.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.2))(pg@8.23.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(svelte@5.58.0)(vitest@4.1.11)
@@ -502,9 +505,6 @@ importers:
       '@clowder/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@fontsource-variable/outfit':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@sveltejs/adapter-node':
         specifier: ^5.5.7
         version: 5.5.7(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.58.0))(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.1))(svelte@5.58.0)(typescript@6.0.3))
@@ -1699,9 +1699,6 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
-
-  '@fontsource-variable/outfit@5.3.0':
-    resolution: {integrity: sha512-fPb5XnYK0k7SbR++HEmm4+ZqDszmLKQ+sPRUr8oQ/KNC0vy6r6hazJFe8iYozv4cqlHbvJ/JECkJWrfDodUMVQ==}
 
   '@fontsource/maple-mono@5.3.0':
     resolution: {integrity: sha512-8N3FVDWphO/971tZIig9D558j9jf09fWYIXFjgv7DKJEvDjtgfATx1ScWHdTCsf+tufFS5M1bAa4AumVBKPhSQ==}
@@ -4450,6 +4447,9 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
+
+  allo-font@1.0.3:
+    resolution: {integrity: sha512-h1u1ukonlmfTYSRc+MPvrjJU/p12A5xmzXIw5YQXf1/VGNi00cnPJfTf1AxYZOHzXRxK2pBLV7GgxtOm7/f+DQ==}
 
   am-i-vibing@0.5.0:
     resolution: {integrity: sha512-KLcsDhqf1XRrJmJr+9I/C0EX2K+sGrAGZFgkmd84c8TJO9zJBu+/kFInjazu1KfJWFhWDKdRWkpBzEs7s35DVA==}
@@ -8651,8 +8651,6 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource-variable/outfit@5.3.0': {}
-
   '@fontsource/maple-mono@5.3.0': {}
 
   '@fuma-translate/react@1.0.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
@@ -10841,6 +10839,8 @@ snapshots:
   acorn@8.19.0: {}
 
   agent-base@7.1.4: {}
+
+  allo-font@1.0.3: {}
 
   am-i-vibing@0.5.0:
     dependencies:

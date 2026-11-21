@@ -1,4 +1,4 @@
-@import "@fontsource-variable/outfit";
+@import "allo-font/friendly";
 @import "@fontsource/maple-mono/400.css";
 @import "@fontsource/maple-mono/500.css";
 @import "shadcn-svelte/tailwind.css";
@@ -116,7 +116,7 @@ html.dark {
     --sidebar-border: --alpha(var(--color-black) / 6%);
     --sidebar-ring: var(--color-neutral-400);
     --destructive-foreground: var(--color-red-700);
-    --font-sans: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Allo", ui-sans-serif, system-ui, sans-serif;
     --font-serif: Georgia, serif;
     --font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --shadow-color: hsl(0 0% 0%);
@@ -184,7 +184,7 @@ html.dark {
     --sidebar-ring: var(--color-neutral-400);
     --destructive-foreground: var(--color-red-400);
     --radius: 0.5rem;
-    --font-sans: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Allo", ui-sans-serif, system-ui, sans-serif;
     --font-serif: Georgia, serif;
     --font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --shadow-color: hsl(0 0% 0%);

@@ -1,6 +1,6 @@
 # Clowder design system
 
-The **canvas resource panel and the cluster detail page are the primary design reference** for new application work; the resource overview and Variables pages that first defined this language were removed with the list view. Match their neutral surfaces, Outfit typoy, compact controls, framed work areas, restrained status colors, and inset application shell. The resource screenshot illustrates this language: a narrow runtime list beside a large editor, both inside muted frames with recessed content panels. Reuse the Svelte components in `apps/web/src/lib/components/ui`; do not approximate them with unrelated card styles.
+The **canvas resource panel and the cluster detail page are the primary design reference** for new application work; the resource overview and Variables pages that first defined this language were removed with the list view. Match their neutral surfaces, Allo typography, compact controls, framed work areas, restrained status colors, and inset application shell. The resource screenshot illustrates this language: a narrow runtime list beside a large editor, both inside muted frames with recessed content panels. Reuse the Svelte components in `apps/web/src/lib/components/ui`; do not approximate them with unrelated card styles.
 
 ## Reference and source of truth
 
@@ -63,7 +63,7 @@ Preserve the resource page's surface hierarchy: sidebar/canvas, translucent shel
 
 ## Typography
 
-Use **Outfit Variable**, already self-hosted through `@fontsource-variable/outfit`, for body text, headings, and controls. Keep the system sans-serif fallbacks. UptimeKit loads Outfit remotely; Clowder retains its local font package.
+Use **Allo**, self-hosted through the `allo-font` package (`allo-font/friendly`), for body text, headings, and controls. Keep the system sans-serif fallbacks. UptimeKit loads Outfit remotely; Clowder uses Allo from a local font package.
 
 | Context                             | Convention                                    |
 | ----------------------------------- | --------------------------------------------- |
@@ -228,7 +228,7 @@ Use the existing Tailwind breakpoints. Let auth pages scroll on short screens; d
 - Overview retains its 1:3 desktop column spans and aligned panel tops; Variables retains its compact single-editor toolbar.
 - Editor scrolling stays inside its panel; headings and actions wrap without page-wide overflow. Verify stacked, `xl` full-height, and short-screen layouts.
 - Both `.dark` and light rendering work, including focus, error, disabled, and loading states.
-- Outfit loads locally; there are no new external font requests.
+- Allo loads locally; there are no new external font requests.
 - Labels, hints, errors, keyboard access, and reduced-motion behavior remain usable.
 - Layouts work at 390px mobile and laptop widths without horizontal overflow.
 - Authentication, navigation, preview, value visibility, and save actions still work after visual changes; dirty edits and inline feedback are preserved.

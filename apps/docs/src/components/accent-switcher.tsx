@@ -12,11 +12,11 @@ const accents = [
 ];
 
 export function AccentSwitcher() {
-    const [current, setCurrent] = useState("mono");
+    const [current, setCurrent] = useState("lime");
 
     // The head script in Layout.astro already applied the saved accent before first paint.
     useEffect(() => {
-        setCurrent(document.documentElement.dataset.accent ?? "mono");
+        setCurrent(document.documentElement.dataset.accent ?? "lime");
     }, []);
 
     function select(value: string) {

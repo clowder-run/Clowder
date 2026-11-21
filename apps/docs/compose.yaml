@@ -1,0 +1,6 @@
+services:
+    clowder-docs:
+        image: pkg.bar/clowder-docs:latest
+        pull_policy: always
+        x-ports:
+            - clowder.run:80/https
