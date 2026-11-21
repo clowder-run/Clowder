@@ -1,5 +1,8 @@
 services:
     clowder-docs:
+        build:
+            dockerfile: apps/docs/Dockerfile
+            context: ../..
         image: pkg.bar/clowder-docs:latest
         pull_policy: always
         x-ports:
