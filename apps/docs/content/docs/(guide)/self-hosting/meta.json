@@ -1,4 +1,11 @@
 {
     "title": "Self-hosting",
-    "pages": ["install", "configuration", "external-worker", "upgrading", "backups", "leaving-clowder"]
+    "pages": [
+        "install",
+        "configuration",
+        "external-worker",
+        "upgrading",
+        "backups",
+        "leaving-clowder"
+    ]
 }
