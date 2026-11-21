@@ -1,0 +1,28 @@
+---
+title: External worker
+icon: Cpu
+---
+
+Setup external workers by adding this service to the compose stack:
+
+```yaml title="compose.yml"
+clowder-worker:
+    image: ghcr.io/clowder-run/worker
+    env_file: .env
+    scale: 1
+    environment:
+        APP_URL: https://${APP_URL:-clowder.example.com}
+        DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@clowder-db.internal:5432/${POSTGRES_DB:-clowder}}
+        REDIS_URL: ${REDIS_URL:-redis://clowder-cache.internal:6379}
+    # Waits for clowder, whose pre-deploy hook runs the migrations this worker's jobs need.
+    depends_on:
+        clowder:
+            condition: service_healthy
+    restart: unless-stopped
+```
+
+Update `scale` to how many replicas you want running(1 is plenty)
+
+## Why would I want it separated
+
+Becuase we plan on making these build dockerfiles aswell.

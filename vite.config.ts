@@ -101,6 +101,7 @@ export default defineConfig({
             "packages/uncloud/dist/**",
             "packages/workflows/dist/**",
             "packages/uncloud/src/generated/**",
+            "apps/docs/openapi.json",
         ],
         singleQuote: false,
         semi: true,

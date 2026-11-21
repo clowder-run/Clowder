@@ -9,7 +9,7 @@ import {
     ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import { Provider, type ProviderProps } from "@/components/provider";
-import { baseOptions, sidebarOptions } from "@/lib/layout.shared";
+import { docsOptions, sidebarOptions } from "@/lib/layout.shared";
 
 export interface DocsProps extends ProviderProps {
     tree: SerializedPageTree;
@@ -37,13 +37,17 @@ export function Docs({
 
     return (
         <Provider {...props}>
-            <DocsLayout {...baseOptions()} sidebar={sidebarOptions} tree={data.tree}>
+            <DocsLayout {...docsOptions()} sidebar={sidebarOptions} tree={data.tree}>
                 <DocsPage toc={toc}>
-                    <DocsTitle>{title}</DocsTitle>
-                    <DocsDescription>{description}</DocsDescription>
-                    <div className="flex flex-row gap-2 items-center border-b -mt-4 pb-6">
-                        <MarkdownCopyButton markdownUrl={markdownUrl} />
-                        <ViewOptionsPopover markdownUrl={markdownUrl} githubUrl={githubUrl} />
+                    <div className="flex justify-between">
+                        <div>
+                            <DocsTitle>{title}</DocsTitle>
+                            <DocsDescription>{description}</DocsDescription>
+                        </div>
+                        <div className="flex flex-row gap-2 items-center border-b -mt-4 pb-6">
+                            <MarkdownCopyButton markdownUrl={markdownUrl} />
+                            <ViewOptionsPopover markdownUrl={markdownUrl} githubUrl={githubUrl} />
+                        </div>
                     </div>
                     {children}
                 </DocsPage>

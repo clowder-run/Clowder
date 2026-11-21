@@ -1,3 +1,13 @@
 ---
-title: API
+title: Overview
+icon: BracketsCurly
 ---
+
+Every procedure the dashboard uses is also a REST endpoint under `https://<your-clowder>/rpc/api`. Requests are `POST` with a JSON body and authenticate with an [API key](/docs/organization/api-keys) in the `x-api-key` header.
+
+```bash
+curl -X POST https://<your-clowder>/rpc/api/projects/listProjects \
+  -H "x-api-key: $CLOWDER_API_KEY"
+```
+
+Your instance serves this spec at `/api-reference/spec.json`.

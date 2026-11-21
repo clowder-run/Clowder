@@ -1,4 +1,28 @@
 {
-    "title": "API",
-    "pages": ["index"]
+    "title": "API reference",
+    "root": true,
+    "icon": "BracketsCurly",
+    "pages": [
+        "index",
+        "health-check",
+        "---Projects---",
+        "...projects",
+        "---Resources---",
+        "...resources",
+        "---Cluster---",
+        "...cluster",
+        "---Buckets---",
+        "...buckets",
+        "---S3---",
+        "...s3",
+        "---Sandboxes---",
+        "...sandboxes",
+        "---Volumes---",
+        "...volumes",
+        "---Connections---",
+        "...connections",
+        "---Terminal---",
+        "...terminal",
+        "..."
+    ]
 }

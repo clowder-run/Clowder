@@ -5,6 +5,7 @@
 @import "fumadocs-ui/css/shadcn.css";
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-ui/components/image-zoom.css";
+@import "fumadocs-openapi/css/preset.css";
 
 html {
     scrollbar-gutter: stable;

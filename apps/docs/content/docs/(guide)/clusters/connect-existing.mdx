@@ -1,0 +1,43 @@
+---
+title: Connect an existing cluster
+icon: PlugsConnected
+---
+
+Connecting an existing cluster requires you to manually deploy the `sidecar` service to it.
+
+```yaml title="compose.yaml"
+services:
+    sidecar:
+        image: ghcr.io/clowder-run/sidecar:latest
+        env_file: .env
+        environment:
+            # Required by every endpoint except /healthz; the sidecar won't start without it.
+            SIDECAR_TOKEN: ${SIDECAR_TOKEN:?set SIDECAR_TOKEN to a random secret, e.g. openssl rand -hex 32}
+        volumes:
+            - /run/uncloud:/run/uncloud:ro
+            # The sidecar installs the GeoIP database Alloy reads from here.
+            - /var/lib/clowder/geoip:/host/var/lib/clowder/geoip
+        # Root + privileged + host PID: the sidecar talks to the Uncloud socket and
+        # runs host commands via nsenter into PID 1.
+        user: root
+        privileged: true
+        pid: host
+        # Only needed when Clowder runs outside this cluster.
+        x-ports:
+            - sidecar.example.com:80/https
+        deploy:
+            mode: global
+        restart: unless-stopped
+```
+
+```properties title=".env"
+SIDECAR_TOKEN=    # openssl rand -hex 32
+```
+
+Deploy it from that directory:
+
+```bash
+uc deploy
+```
+
+Then click `Create cluster`, pick `Connect existing cluster` and enter the token from `.env` and the Sidecar URL `https://sidecar.example.com` otherwise, a domain pointing at the cluster that Caddy serves through `x-ports`. Please firewall this!

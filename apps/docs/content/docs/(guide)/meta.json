@@ -1,0 +1,25 @@
+{
+    "title": "Guide",
+    "root": true,
+    "icon": "BookOpen",
+    "pages": [
+        "index",
+        "quickstart",
+        "concepts",
+        "---Self-hosting---",
+        "...self-hosting",
+        "---Clusters---",
+        "...clusters",
+        "---Deploy---",
+        "...deploy",
+        "---Connections---",
+        "...connections",
+        "---Observability---",
+        "observability",
+        "---Organization---",
+        "...organization",
+        "---Reference---",
+        "leaving-clowder",
+        "troubleshooting"
+    ]
+}

@@ -45,6 +45,6 @@ export default defineConfig({
     vite: {
         plugins: [tailwindcss()],
         // fumadocs-ui (aliased to @fumadocs/base-ui) components import their own CSS, which Node can't load unbundled.
-        resolve: { noExternal: ["fumadocs-ui", "@fumadocs/base-ui"] },
+        resolve: { noExternal: ["fumadocs-ui", "@fumadocs/base-ui", "fumadocs-openapi"] },
     },
 });
