@@ -33,10 +33,12 @@ jobs:
             - name: Extract Version
               id: get_version
               run: |
-                  # Read version from root package.json
-                  ROOT_VERSION=$(jq -er '.version' package.json)
-                  echo "VERSION=$ROOT_VERSION" >> $GITHUB_ENV
-                  echo "version=$ROOT_VERSION" >> $GITHUB_OUTPUT
+                  # The tag is the version; write it to package.json so the release commit bumps it
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  jq --indent 4 --arg v "$VERSION" '.version = $v' package.json > package.json.tmp
+                  mv package.json.tmp package.json
+                  echo "VERSION=$VERSION" >> $GITHUB_ENV
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
 
             - name: Update Lockfile
               run: pnpm install --lockfile-only
