@@ -9,6 +9,7 @@ import {
     ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import { Provider, type ProviderProps } from "@/components/provider";
+import type { RepoStats } from "@/lib/shared";
 import { docsOptions, sidebarOptions } from "@/lib/layout.shared";
 
 export interface DocsProps extends ProviderProps {
@@ -18,6 +19,7 @@ export interface DocsProps extends ProviderProps {
     toc: TOCItemType[];
     markdownUrl: string;
     githubUrl: string;
+    repoStats: RepoStats | null;
 }
 
 /**
@@ -30,6 +32,7 @@ export function Docs({
     toc,
     markdownUrl,
     githubUrl,
+    repoStats,
     children,
     ...props
 }: DocsProps) {
@@ -37,7 +40,7 @@ export function Docs({
 
     return (
         <Provider {...props}>
-            <DocsLayout {...docsOptions()} sidebar={sidebarOptions} tree={data.tree}>
+            <DocsLayout {...docsOptions(repoStats)} sidebar={sidebarOptions} tree={data.tree}>
                 <DocsPage toc={toc}>
                     <div className="flex justify-between">
                         <div>

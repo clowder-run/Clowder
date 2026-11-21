@@ -14,12 +14,9 @@
         "...deploy",
         "---Connections---",
         "...connections",
-        "---Observability---",
-        "observability",
         "---Organization---",
         "...organization",
         "---Reference---",
-        "leaving-clowder",
         "troubleshooting"
     ]
 }

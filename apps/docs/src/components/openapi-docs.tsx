@@ -4,23 +4,25 @@ import { DocsBody, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import type { OpenAPIPageProps } from "fumadocs-openapi/ui";
 import { OpenAPIPage } from "@/components/api-page";
 import { Provider, type ProviderProps } from "@/components/provider";
+import type { RepoStats } from "@/lib/shared";
 import { docsOptions, sidebarOptions } from "@/lib/layout.shared";
 
 export interface OpenAPIDocsProps extends ProviderProps {
     tree: SerializedPageTree;
     title: string;
     page: OpenAPIPageProps;
+    repoStats: RepoStats | null;
 }
 
 /**
  * The React island of generated API reference pages.
  */
-export function OpenAPIDocs({ tree, title, page, ...props }: OpenAPIDocsProps) {
+export function OpenAPIDocs({ tree, title, page, repoStats, ...props }: OpenAPIDocsProps) {
     const data = useFumadocsLoader({ tree });
 
     return (
         <Provider {...props}>
-            <DocsLayout {...docsOptions()} sidebar={sidebarOptions} tree={data.tree}>
+            <DocsLayout {...docsOptions(repoStats)} sidebar={sidebarOptions} tree={data.tree}>
                 <DocsPage full>
                     <DocsTitle>{title}</DocsTitle>
                     <DocsBody>

@@ -19,3 +19,16 @@ export function getPageImageUrl(page: { slugs: string[]; locale?: string }) {
 
     return { segments, url: getImageUrl(segments, page.locale) };
 }
+
+export interface RepoStats {
+    stars: number;
+    forks: number;
+}
+
+/** Null when GitHub refuses, it rate limits each IP to 60 requests an hour. */
+export function fetchRepoStats(): Promise<RepoStats | null> {
+    return fetch(`https://api.github.com/repos/${gitConfig.user}/${gitConfig.repo}`)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => data && { stars: data.stargazers_count, forks: data.forks_count })
+        .catch(() => null);
+}
