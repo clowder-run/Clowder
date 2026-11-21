@@ -27,6 +27,12 @@ const { title, description, image } = Astro.props;
     {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
     {image && <meta name="twitter:card" content="summary_large_image" />}
     <ClientRouter />
+    {import.meta.env.PROD && (
+      <>
+        <script is:inline defer src="https://rum.irazz.lol/script.js" data-website-id="1a3882d7-9ee9-4d1d-8d95-90bfe1c058d6"></script>
+        <script is:inline defer src="https://rum.irazz.lol/recorder.js" data-website-id="1a3882d7-9ee9-4d1d-8d95-90bfe1c058d6"></script>
+      </>
+    )}
     <script is:inline>
       // Applies the saved accent before first paint, and again after each client-side navigation swaps <html>.
       // Keep the list in sync with src/components/accent-switcher.tsx.
